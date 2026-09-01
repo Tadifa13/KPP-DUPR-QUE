@@ -30,15 +30,54 @@ survives.
 ## Running it
 
 ```bash
-php -S 127.0.0.1:8000 -t .
+./serve.sh
 ```
 
-Open <http://127.0.0.1:8000> and the first run walks you through creating the
+Open <http://localhost:8080> and the first run walks you through creating the
 club and an organizer account. The SQLite file is created automatically at
 `data/que.sqlite`.
 
-For a real host, point the document root at this directory. The only writable
-path needed is `data/`.
+For a shared host, point the document root at this directory instead. The only
+writable path needed is `data/`.
+
+---
+
+## Running it offline
+
+**The app never needs the internet.** There are no CDNs, no web fonts, no
+analytics, no external APIs — every asset is served from this directory, and
+nothing about a session leaves the machine it runs on.
+
+`./serve.sh` binds to the LAN and prints the address, so the intended setup at a
+venue is:
+
+- Run it on a laptop, mini PC or phone at the court.
+- Everyone joins that Wi-Fi — **a phone hotspot with no internet behind it
+  works perfectly**.
+- The organizer uses `http://<lan-ip>:8080`, spectators open the board link.
+
+That removes the network as a dependency altogether, which is the only honest
+way to be offline for an app that has to accept writes.
+
+### On top of that, the browser layer
+
+`sw.js` is a service worker that:
+
+- precaches the CSS, JS and icons so the interface loads instantly and works
+  without a connection;
+- serves pages network-first, falling back to the last copy you loaded, then to
+  `offline.html`;
+- makes the app installable to a home screen as a PWA.
+
+**Writes are never queued or replayed.** If a result cannot reach the server,
+the organizer is told the change did not save and asked to retry. Silently
+accepting a score and syncing it later would let two devices record conflicting
+results for the same court — a wrong result shown as saved is worse than an
+honest failure. A dropped connection also raises a persistent bar at the bottom
+of the screen so the state is never ambiguous.
+
+Bump `VERSION` in `sw.js` whenever you change anything in `assets/`; that is what
+retires the old cache.
 
 ### Tests
 
@@ -173,6 +212,9 @@ lib/export.php        Reclub CSV / text / JSON backup
 lib/auth.php          organizer login, CSRF, flash
 ui/bootstrap.php      single include for every page
 ui/theme.php          shared chrome and render helpers
+sw.js                 service worker — asset precache, offline fallback
+offline.html          shown when a page was never loaded on this device
+serve.sh              local-first launcher, binds to the LAN
 index.php             play — courts, queue, scores
 roster.php            club player list
 standings.php         results and rating calibration

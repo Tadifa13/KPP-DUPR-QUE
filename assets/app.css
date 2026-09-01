@@ -249,6 +249,15 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-
 }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 
+/* ------------------------------------------------------ offline state --- */
+.netbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  background: #78521a; color: #fde68a;
+  font-size: 12.5px; font-weight: 700; text-align: center;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--amber);
+}
+
 /* ---------------------------------------------------------- spectator --- */
 body.bare { background: linear-gradient(180deg, #0a2419, #04120d); }
 body.bare main { max-width: 900px; padding-top: 22px; }

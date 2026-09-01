@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Offline — KAMRYNNE QUE</title>
+<meta name="theme-color" content="#0a2d20">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<main>
+  <div class="board-head">
+    <p class="eyebrow">No connection</p>
+    <h1 class="board-title">You are offline</h1>
+    <p class="tiny muted">
+      This page has not been opened yet on this device, so there is no cached
+      copy to show you.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>If you are the organizer</h3>
+    <p class="tiny">
+      Your session is safe on the server &mdash; nothing is stored only in this
+      browser. Reconnect and everything will be exactly where you left it.
+    </p>
+    <p class="tiny muted">
+      Running the app on the venue's own machine avoids this entirely. See
+      <code>serve.sh</code> in the project.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>If you are watching</h3>
+    <p class="tiny">
+      The board updates only while you are connected to the venue network. Pages
+      you have already opened stay available offline.
+    </p>
+  </div>
+
+  <div class="btn-row">
+    <a class="btn btn-primary btn-block" href="javascript:location.reload()">Try again</a>
+  </div>
+</main>
+<footer class="pagefoot">KAMRYNNE QUE &middot; offline</footer>
+</body>
+</html>

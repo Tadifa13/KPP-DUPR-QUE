@@ -133,7 +133,33 @@ match's reason string says so rather than failing silently.
 - **The fairness window itself** — a clean, explainable invariant.
 - **Reclub CSV columns**, byte-for-byte, so existing import mappings keep working.
 
-## 9. Added
+## 9. Offline operation restored
+
+**Original.** Genuinely offline-first: `localStorage`, a service worker, and a
+PWA manifest. It worked in a gym with no signal — which is exactly where it was
+used. Moving state onto a server to fix the write-capability flaw and the
+durability problem traded that away.
+
+**Now.** Offline is restored, but by a different route:
+
+- **No internet dependency at all.** Zero external requests — no CDN, no web
+  font, no analytics, no third-party API. Verified by grep across the source.
+  `serve.sh` binds to the LAN, so the intended venue setup is the app running on
+  a machine at the court with everyone on that Wi-Fi. A phone hotspot with no
+  internet behind it is a complete deployment.
+- **`sw.js`** precaches the app shell, serves pages network-first with a cached
+  fallback and then `offline.html`, and makes the app installable as a PWA.
+- **A dropped connection is surfaced**, not hidden, by a persistent bar.
+
+**Deliberately not done: an offline write queue.** Background-syncing queued
+results would let two devices record conflicting outcomes for the same court,
+and would show a score as saved when the server never received it. For a system
+whose entire value is a defensible record of who played whom, a wrong result
+presented as saved is worse than an honest refusal. Writes therefore fail loudly
+and are retried by the organizer. Running the server locally makes the failure
+mode almost unreachable anyway.
+
+## 10. Added
 
 - Organizer accounts, password hashing, CSRF on every mutation, strict CSP.
 - Rating adjustment audit log (who, what, when).
