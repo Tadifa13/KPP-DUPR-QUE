@@ -429,8 +429,18 @@ if ($resting): ?>
         </div>
       </form>
     </div>
-    <div class="btn-row">
-      <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="board_rotate">
+    <div style="text-align:center;margin:14px 0">
+      <img src="<?= e(qr_data_uri($url, 'Q', 5, 2)) ?>" alt="QR code for the spectator board"
+           style="width:170px;height:auto;border-radius:8px">
+      <p class="hint" style="margin-top:8px">Scan to open the board. Codes are drawn on this server — no internet needed.</p>
+    </div>
+
+    <a class="btn btn-amber btn-block" href="courts.php">Print a code for each court</a>
+
+    <div class="btn-row" style="margin-top:8px">
+      <form method="post"
+            onsubmit="return confirm('Issue new codes? Every link and printed court card already handed out stops working.');">
+        <?= csrf_field() ?><input type="hidden" name="action" value="board_rotate">
         <button class="btn btn-ghost btn-block" type="submit">Issue new link</button></form>
       <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="board_toggle">
         <button class="btn btn-danger btn-block" type="submit">Turn off</button></form>

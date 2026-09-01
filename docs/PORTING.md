@@ -159,7 +159,32 @@ presented as saved is worse than an honest refusal. Writes therefore fail loudly
 and are retried by the organizer. Running the server locally makes the failure
 mode almost unreachable anyway.
 
-## 10. Added
+## 10. Court codes — new
+
+Not in the original, which generated a single spectator QR client-side with a
+bundled JavaScript library.
+
+Each court now gets its own printable QR code pointing at a live single-court
+view (`court.php`), alongside one for the whole session. The encoder
+(`lib/qr.php`) is written from the specification in pure PHP: byte mode,
+versions 1-10, ECC L/M/Q/H, full mask selection by penalty score.
+
+Writing an encoder rather than calling a QR service or bundling a JS library is
+the whole point — a code that needs the internet to render cannot be printed at
+a venue with no signal. Codes embed as SVG data URIs so the print sheet is
+fully self-contained.
+
+Court codes carry the same read token as the board, so they inherit the same
+property: no write path exists behind them. `qr.php` deliberately refuses to
+encode arbitrary input — it takes a token and a court number and builds the URL
+itself, so it cannot be used to mint a club-looking code that points anywhere.
+
+Verification: module-for-module equality with a reference encoder across 64
+input/mask combinations spanning versions 1-8 and all four ECC levels; all 32
+published format-information values; lossless SVG round-trip; and an end-to-end
+decode of the served SVG by a real QR scanner.
+
+## 11. Added
 
 - Organizer accounts, password hashing, CSRF on every mutation, strict CSP.
 - Rating adjustment audit log (who, what, when).

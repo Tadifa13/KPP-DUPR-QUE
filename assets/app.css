@@ -249,6 +249,38 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-
 }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 
+/* -------------------------------------------------------- court codes --- */
+.qr-sheet {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+.qr-card {
+  background: #ffffff; color: #0b0b0b; border: 1px solid #c9d2cc;
+  border-radius: 12px; padding: 16px 14px; text-align: center;
+  break-inside: avoid; page-break-inside: avoid;
+}
+.qr-kicker {
+  font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+  color: #5b6b62; margin: 0 0 4px; font-weight: 700;
+}
+.qr-title { font-size: 19px; font-weight: 800; margin: 0 0 12px; color: #0b0b0b; letter-spacing: -.01em; }
+.qr-title.qr-court { font-size: 27px; }
+.qr-img { display: block; width: 100%; max-width: 190px; height: auto; margin: 0 auto; }
+.qr-caption { font-size: 12px; color: #3f4a44; margin: 12px 0 0; }
+.qr-url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 8.5px; color: #7b8983; margin: 6px 0 0; word-break: break-all; line-height: 1.35;
+}
+
+@media print {
+  body { background: #fff !important; color: #000; }
+  .topbar, .tabs, .pagefoot, .flash, .noprint, .netbar { display: none !important; }
+  main { max-width: none; padding: 0; }
+  .qr-sheet { grid-template-columns: repeat(2, 1fr); gap: 10mm; }
+  .qr-card { border: 1px dashed #999; }
+  @page { margin: 12mm; }
+}
+
 /* ------------------------------------------------------ offline state --- */
 .netbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;

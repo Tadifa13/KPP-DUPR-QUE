@@ -56,6 +56,7 @@ function page_head(string $title, array $opt = []): void
       'play'      => ['index.php',     'Play'],
       'roster'    => ['roster.php',    'Roster'],
       'standings' => ['standings.php', 'Standings'],
+      'courts'    => ['courts.php',    'Court codes'],
       'reclub'    => ['reclub.php',    'Reclub'],
       'history'   => ['history.php',   'History'],
   ];

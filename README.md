@@ -187,6 +187,30 @@ clamped to ±1.00 DUPR, and written to an audit log with who did it and when.
 
 ---
 
+## Court codes
+
+Turn the board on, open **Court codes**, and print the sheet. Each card carries
+a QR code — one per court, plus one for the whole session. Tape a court card to
+its post; scanning it opens that court's live view: who is on now, the target
+score, and what just finished there.
+
+The codes are generated on this server by [`lib/qr.php`](lib/qr.php), a QR
+encoder written for this app. Nothing is fetched from a QR web service and no
+JavaScript library is loaded — a code that needs the internet to render would
+defeat the point of an app built to run at a venue with no signal. Codes are
+embedded as SVG data URIs, so the sheet prints correctly with no connection.
+
+Error correction is level Q, which keeps a card scannable when it is scuffed or
+partly covered. Rotating the session token kills every printed card at once, so
+reprint after you rotate.
+
+The encoder is verified module-for-module against a reference implementation
+across eight inputs x eight masks (versions 1-8, all four ECC levels, ASCII and
+UTF-8), all 32 published format-information values, and by decoding the rendered
+output with an actual QR scanner.
+
+---
+
 ## The spectator board
 
 Turn it on and you get a link (and a token) to share. It is genuinely read-only:
@@ -218,6 +242,10 @@ serve.sh              local-first launcher, binds to the LAN
 index.php             play — courts, queue, scores
 roster.php            club player list
 standings.php         results and rating calibration
+courts.php            printable QR sheet, one code per court
+court.php             public live view of a single court
+qr.php                QR image endpoint (SVG)
+lib/qr.php            QR encoder — pure PHP, no network
 reclub.php            entry list and exports
 history.php           archived sessions
 spectate.php          public read-only board

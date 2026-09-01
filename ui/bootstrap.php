@@ -17,6 +17,7 @@ require_once __DIR__ . '/../lib/rating.php';
 require_once __DIR__ . '/../lib/matchmaker.php';
 require_once __DIR__ . '/../lib/repo.php';
 require_once __DIR__ . '/../lib/export.php';
+require_once __DIR__ . '/../lib/qr.php';
 require_once __DIR__ . '/../lib/auth.php';
 require_once __DIR__ . '/theme.php';
 
