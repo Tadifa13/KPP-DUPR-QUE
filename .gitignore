@@ -1,0 +1,18 @@
+# Runtime data — never commit a club's roster or results
+/data/*
+!/data/.gitkeep
+!/data/.htaccess
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Local overrides
+config/local.php
+.env
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
