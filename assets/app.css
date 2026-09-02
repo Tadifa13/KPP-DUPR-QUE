@@ -282,6 +282,11 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-
 }
 
 /* ------------------------------------------------------ offline state --- */
+[data-offline-state="active"]   { color: var(--emerald) !important; }
+[data-offline-state="insecure"],
+[data-offline-state="failed"],
+[data-offline-state="unsupported"] { color: var(--amber) !important; }
+
 .netbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
   background: #78521a; color: #fde68a;

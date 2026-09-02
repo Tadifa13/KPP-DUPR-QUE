@@ -6,6 +6,10 @@
 *.sqlite-wal
 *.sqlite-shm
 
+# Locally issued TLS material for --https
+/data/tls/
+*.pem
+
 # Local overrides
 config/local.php
 .env

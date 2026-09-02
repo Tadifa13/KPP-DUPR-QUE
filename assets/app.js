@@ -2,12 +2,32 @@
 (function () {
   'use strict';
 
-  // Register the service worker so the app installs as a PWA and already-seen
-  // pages stay readable without a connection.
-  if ('serviceWorker' in navigator) {
+  // Offline caching and "install to home screen" need a secure context.
+  // https:// and localhost qualify; a LAN address over plain http does not —
+  // there `navigator.serviceWorker` is not even defined. Report which of those
+  // we are in rather than failing silently, so nobody assumes a phone on the
+  // LAN has offline support when it does not.
+  function reportOfflineState(state, detail) {
+    document.querySelectorAll('[data-offline-state]').forEach(function (el) {
+      el.textContent = detail;
+      el.setAttribute('data-offline-state', state);
+    });
+  }
+
+  if (!window.isSecureContext) {
+    reportOfflineState('insecure',
+      'Not available on this address — offline caching and install need HTTPS. '
+      + 'The app still works normally.');
+  } else if (!('serviceWorker' in navigator)) {
+    reportOfflineState('unsupported', 'This browser does not support offline caching.');
+  } else {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('sw.js').catch(function () {
-        /* Not fatal — the app works fine without it. */
+      navigator.serviceWorker.register('sw.js').then(function () {
+        return navigator.serviceWorker.ready;
+      }).then(function () {
+        reportOfflineState('active', 'Active — pages you have opened stay available offline.');
+      }).catch(function (err) {
+        reportOfflineState('failed', 'Could not start: ' + (err && err.message ? err.message : 'unknown error'));
       });
     });
   }

@@ -44,37 +44,47 @@ writable path needed is `data/`.
 
 ## Running it offline
 
-**The app never needs the internet.** There are no CDNs, no web fonts, no
-analytics, no external APIs — every asset is served from this directory, and
-nothing about a session leaves the machine it runs on.
+**The app never needs the internet.** No CDNs, no web fonts, no analytics, no
+external APIs — every asset is served from this directory, and nothing about a
+session leaves the machine it runs on.
 
-`./serve.sh` binds to the LAN and prints the address, so the intended setup at a
-venue is:
+Run it on a laptop, mini PC or Android phone at the court; everyone joins that
+Wi-Fi. **A phone hotspot with no internet behind it is a complete deployment.**
 
-- Run it on a laptop, mini PC or phone at the court.
-- Everyone joins that Wi-Fi — **a phone hotspot with no internet behind it
-  works perfectly**.
-- The organizer uses `http://<lan-ip>:8080`, spectators open the board link.
+```bash
+./serve.sh              # http, port 8080 — works on every device
+./serve.sh --https      # adds https on 8443 — needed for installable apps
+```
 
-That removes the network as a dependency altogether, which is the only honest
-way to be offline for an app that has to accept writes.
+Two levels of offline, and it matters which you need:
 
-### On top of that, the browser layer
+| | No internet needed | Readable with the **server** unreachable | Installs to home screen |
+|---|---|---|---|
+| `./serve.sh` (HTTP) | every device | server's own machine only | bookmark only |
+| `./serve.sh --https` | every device | yes, once the cert is trusted | yes |
 
-`sw.js` is a service worker that:
+Most clubs only need the first. Browsers expose service workers, the Cache API
+and installation **only on a secure context** — `https://` or `localhost`. A LAN
+address like `http://192.168.1.50:8080` is not one, and there
+`navigator.serviceWorker` is not even defined. That is why `--https` exists: it
+issues a self-signed certificate for your LAN address and terminates TLS in
+[`bin/tls-proxy.php`](bin/tls-proxy.php), using nothing but PHP's own openssl
+streams.
 
-- precaches the CSS, JS and icons so the interface loads instantly and works
-  without a connection;
-- serves pages network-first, falling back to the last copy you loaded, then to
-  `offline.html`;
-- makes the app installable to a home screen as a PWA.
+Note that **clicking through a certificate warning is not enough** — browsers
+refuse service workers on an origin with an untrusted certificate. It has to be
+installed on each device, once.
 
-**Writes are never queued or replayed.** If a result cannot reach the server,
-the organizer is told the change did not save and asked to retry. Silently
-accepting a score and syncing it later would let two devices record conflicting
-results for the same court — a wrong result shown as saved is worse than an
-honest failure. A dropped connection also raises a persistent bar at the bottom
-of the screen so the state is never ambiguous.
+**Full per-device setup — Android, iPhone, iPad, Mac, Windows, Linux — is in
+[docs/DEVICES.md](docs/DEVICES.md).**
+
+The app tells you where it stands: **Play → This device → Offline caching**
+reports *Active* or explains why not.
+
+**Writes are never queued or replayed.** If a result cannot reach the server the
+organizer is told it did not save, and retries. Silently accepting a score and
+syncing later would let two devices record conflicting results for the same
+court — a wrong result shown as saved is worse than an honest failure.
 
 Bump `VERSION` in `sw.js` whenever you change anything in `assets/`; that is what
 retires the old cache.
@@ -82,12 +92,13 @@ retires the old cache.
 ### Tests
 
 ```bash
-php tests/run.php && php tests/smoke.php
+php tests/run.php && php tests/smoke.php && php tests/qr_test.php
 ```
 
-`run.php` covers the engine as pure functions (62 assertions). `smoke.php`
+189 assertions. `run.php` covers the engine as pure functions (62). `smoke.php`
 drives a whole session through the database — roster, matchmaking, scores,
-standings, exports, spectator tokens (54 assertions).
+standings, exports, spectator tokens (54). `qr_test.php` covers the QR encoder,
+including all 32 published format-information values (73).
 
 ### Configuration
 
@@ -238,7 +249,9 @@ ui/bootstrap.php      single include for every page
 ui/theme.php          shared chrome and render helpers
 sw.js                 service worker — asset precache, offline fallback
 offline.html          shown when a page was never loaded on this device
-serve.sh              local-first launcher, binds to the LAN
+serve.sh              local-first launcher, HTTP or HTTPS, binds to the LAN
+bin/tls-proxy.php     TLS terminator so LAN devices get a secure context
+cert.php              serves the local certificate for devices to install
 index.php             play — courts, queue, scores
 roster.php            club player list
 standings.php         results and rating calibration

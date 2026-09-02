@@ -452,6 +452,20 @@ if ($resting): ?>
   <?php endif; ?>
 </div>
 
+<h2>This device</h2>
+<div class="card tight">
+  <div class="split">
+    <strong style="font-size:13px">Offline caching</strong>
+    <span class="tiny mono muted"><?= e($_SERVER['HTTP_HOST'] ?? '') ?></span>
+  </div>
+  <p class="hint" data-offline-state="checking" style="margin-top:6px">Checking…</p>
+  <p class="hint">
+    The app works fully either way — this only affects whether pages you have
+    already opened stay readable with no connection, and whether it can be
+    installed to the home screen. See <code>docs/DEVICES.md</code>.
+  </p>
+</div>
+
 <h2>Session</h2>
 <form method="post" class="card tight">
   <?= csrf_field() ?>
