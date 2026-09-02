@@ -14,12 +14,15 @@
  *                   is told to retry rather than being shown a fake result.
  */
 
-const VERSION = 'que-v1.0.0';
+const VERSION = 'que-v1.1.0';
 const SHELL = [
   './offline.html',
   './assets/app.css',
   './assets/app.js',
-  './assets/favicon.svg',
+  './assets/brand/logo-96.png',
+  './assets/art-paddle.svg',
+  './assets/fonts/BarlowCondensed-700.woff2',
+  './assets/fonts/Barlow-400.woff2',
 ];
 
 self.addEventListener('install', (event) => {
@@ -59,7 +62,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Shell assets: cache-first.
-  if (/\.(css|js|svg|png|ico)$/.test(url.pathname)) {
+  if (/\.(css|js|svg|png|ico|woff2)$/.test(url.pathname)) {
     event.respondWith(
       caches.match(request).then((hit) => hit || fetch(request).then((res) => {
         const copy = res.clone();

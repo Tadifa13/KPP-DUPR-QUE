@@ -124,52 +124,139 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if (!$session) {
     page_head('Play', ['nav' => true, 'active' => 'play']);
     $players = players_for_club($clubId);
+    $ready = count($players) >= 4;
+    $past = session_history($clubId, 1);
+    // Courts a session would open, taken from the last one so the panel
+    // reflects this club rather than an invented default.
+    $courtCount = $past ? (int) $past[0]['courts'] : 2;
     ?>
-    <p class="eyebrow">No session running</p>
-    <h1>Start tonight's social</h1>
-    <p class="sub">The roster seeds from your club list — <?= count($players) ?> active player<?= count($players) === 1 ? '' : 's' ?>. You can add walk-ins at any point.</p>
 
-    <?php if (count($players) < 4): ?>
-      <div class="empty">
-        You need at least four players before a session can call a match.<br>
-        <a href="roster.php">Add players to the club list →</a>
+    <section class="hero">
+      <div class="hero-art"><img src="assets/art-paddle.svg" alt="" width="420" height="320"></div>
+      <div class="hero-body">
+        <p class="eyebrow">No session running</p>
+        <h1>Start tonight's social</h1>
+        <p>The roster seeds from your club list — <?= count($players) ?> active player<?= count($players) === 1 ? '' : 's' ?>.<br>
+           You can add walk-ins at any point.</p>
+
+        <?php if (!$ready): ?>
+          <div class="callout">
+            <span class="callout-ring"><?= icon('users', 24) ?></span>
+            <div class="callout-body">
+              <p style="margin:0 0 12px">You need at least four players before a session can call a match.</p>
+              <a class="btn btn-primary" href="roster.php">Add players to the club list <?= icon('chevron', 16) ?></a>
+            </div>
+          </div>
+        <?php else: ?>
+          <form method="post" class="callout" style="display:block">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="start_session">
+            <div class="field">
+              <label for="name">Session name</label>
+              <input type="text" id="name" name="name" value="<?= e(APP_NAME) ?>" required>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="courts">Courts</label>
+                <select id="courts" name="courts">
+                  <?php for ($i = 1; $i <= MAX_COURTS; $i++): ?>
+                    <option value="<?= $i ?>"<?= $i === $courtCount ? ' selected' : '' ?>><?= $i ?></option>
+                  <?php endfor; ?>
+                </select>
+              </div>
+              <div class="field">
+                <label for="target">Games to</label>
+                <select id="target" name="target">
+                  <?php foreach (VALID_TARGETS as $t): ?>
+                    <option value="<?= $t ?>"<?= $t === DEFAULT_TARGET ? ' selected' : '' ?>><?= $t ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+              <div class="field">
+                <label for="format">Format</label>
+                <select id="format" name="format">
+                  <option value="doubles">Doubles</option>
+                  <option value="singles">Singles</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-block" type="submit"><?= icon('play', 18) ?>Start session</button>
+          </form>
+        <?php endif; ?>
       </div>
-    <?php else: ?>
-    <form method="post" class="card">
-      <?= csrf_field() ?>
-      <input type="hidden" name="action" value="start_session">
-      <div class="field">
-        <label for="name">Session name</label>
-        <input type="text" id="name" name="name" value="<?= e(APP_NAME) ?>" required>
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label for="courts">Courts</label>
-          <select id="courts" name="courts">
-            <?php for ($i = 1; $i <= MAX_COURTS; $i++): ?>
-              <option value="<?= $i ?>"<?= $i === 2 ? ' selected' : '' ?>><?= $i ?></option>
+    </section>
+
+    <div class="statgrid">
+      <?= stat_card('users',  count($players), 'Active players', 'On the club list') ?>
+      <?= stat_card('court',  $courtCount,     'Courts',         'Ready to open') ?>
+      <?= stat_card('trophy', 0,               'Matches',        'Played tonight') ?>
+      <?= stat_card('clock',  0,               'Queue',          'Players waiting') ?>
+    </div>
+
+    <div class="dash">
+      <section class="panel">
+        <p class="panel-head"><?= icon('court', 15) ?>Courts</p>
+        <div class="panel-body">
+          <p class="panel-note"><?= $courtCount ?> court<?= $courtCount === 1 ? '' : 's' ?> will open with the session</p>
+          <div class="courtlist">
+            <?php for ($c = 1; $c <= $courtCount; $c++): ?>
+              <div class="courtrow">
+                <span class="dot" style="background:<?= e(court_colour($c)) ?>"></span>
+                <span class="nm">Court <?= $c ?></span>
+                <span class="st">Closed</span>
+              </div>
             <?php endfor; ?>
-          </select>
+          </div>
         </div>
-        <div class="field">
-          <label for="target">Games to</label>
-          <select id="target" name="target">
-            <?php foreach (VALID_TARGETS as $t): ?>
-              <option value="<?= $t ?>"<?= $t === DEFAULT_TARGET ? ' selected' : '' ?>><?= $t ?></option>
-            <?php endforeach; ?>
-          </select>
+      </section>
+
+      <section class="panel">
+        <p class="panel-head"><?= icon('users', 15) ?>Queue</p>
+        <div class="panel-body">
+          <div class="emptystate">
+            <span class="emptystate-ring"><?= icon('users', 26) ?></span>
+            <p class="t">No one is in the queue</p>
+            <p class="d">Players appear here once a session starts.</p>
+          </div>
         </div>
-        <div class="field">
-          <label for="format">Format</label>
-          <select id="format" name="format">
-            <option value="doubles">Doubles</option>
-            <option value="singles">Singles</option>
-          </select>
-        </div>
+      </section>
+
+      <div style="display:flex;flex-direction:column;gap:var(--s3)">
+        <section class="panel">
+          <p class="panel-head"><?= icon('shield', 15) ?>Session rules</p>
+          <div class="panel-body">
+            <ul class="rules">
+              <li><?= icon('check', 15) ?>Fair queue — nobody sits while others play twice</li>
+              <li><?= icon('check', 15) ?>Ratings are frozen onto each match when it is played</li>
+              <li><?= icon('check', 15) ?>Walk-ins can join at any point without blocking the queue</li>
+              <li><?= icon('check', 15) ?>All data stays on this server</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="panel">
+          <p class="panel-head"><?= icon('clock', 15) ?>Recent activity</p>
+          <div class="panel-body">
+            <?php if ($past): ?>
+              <div class="courtrow">
+                <span class="dot" style="background:var(--fg-dim)"></span>
+                <span class="nm"><?= e($past[0]['name']) ?></span>
+                <span class="st"><?= e(date('j M', (int) ($past[0]['started_at'] / 1000))) ?></span>
+              </div>
+              <a class="btn btn-ghost btn-sm btn-block" style="margin-top:10px" href="history.php">
+                <?= icon('clock', 15) ?>View history
+              </a>
+            <?php else: ?>
+              <div class="emptystate">
+                <span class="emptystate-ring"><?= icon('clock', 26) ?></span>
+                <p class="t">No recent activity</p>
+                <p class="d">Match results will appear here.</p>
+              </div>
+            <?php endif; ?>
+          </div>
+        </section>
       </div>
-      <button class="btn btn-primary btn-block" type="submit"><?= icon('play', 18) ?>Start session</button>
-    </form>
-    <?php endif; ?>
+    </div>
     <?php
     page_foot();
     exit;

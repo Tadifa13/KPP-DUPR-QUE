@@ -51,9 +51,42 @@ page_head('Standings', ['nav' => true, 'active' => 'standings']);
 
 if (!$session) {
     ?>
-    <p class="eyebrow">Standings</p>
-    <h1>No session</h1>
-    <div class="empty">Start a session to see standings, or pick one from <a href="history.php">History</a>.</div>
+    <section class="hero">
+      <div class="hero-art"><img src="assets/art-paddle.svg" alt="" width="420" height="320"></div>
+      <div class="hero-body">
+        <p class="eyebrow">Standings</p>
+        <h1>No session</h1>
+        <div class="callout">
+          <span class="callout-ring"><?= icon('trophy', 24) ?></span>
+          <div class="callout-body">
+            <p style="margin:0 0 12px">Start a session to see standings, or pick one from your history.</p>
+            <a class="btn btn-primary" href="history.php"><?= icon('clock', 16) ?>View history <?= icon('chevron', 15) ?></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <?php /* Skeleton rows so the shape of the table is legible before any
+             game is played — an empty axis frame tells the reader nothing. */ ?>
+    <section class="panel">
+      <div class="panel-body">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="rank">#</th><th>Player</th><th class="num">W</th><th class="num">L</th><th class="num">Diff</th><th>Form</th></tr></thead>
+          </table>
+        </div>
+        <?php for ($i = 0; $i < 4; $i++): ?>
+          <div class="skel-row" aria-hidden="true">
+            <span class="skel dot"></span>
+            <span class="skel wide"></span>
+            <span class="skel cell"></span>
+            <span class="skel cell"></span>
+            <span class="skel cell"></span>
+          </div>
+        <?php endfor; ?>
+        <p class="panel-note center" style="margin-top:14px">Standings fill in as games are recorded.</p>
+      </div>
+    </section>
     <?php
     page_foot();
     exit;

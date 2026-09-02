@@ -22,11 +22,12 @@ function page_head(string $title, array $opt = []): void
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title><?= e($title) ?> — <?= e(APP_NAME) ?></title>
 <meta name="description" content="Fair queue management for DUPR pickleball socials.">
-<meta name="theme-color" content="#0a2d20">
+<meta name="theme-color" content="#05100b">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="<?= e(APP_NAME) ?>">
 <link rel="manifest" href="manifest.php">
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/brand/logo-96.png" sizes="96x96" type="image/png">
+<link rel="apple-touch-icon" href="assets/brand/logo-180.png">
 <?php /* Only the two faces above the fold are preloaded; the rest load normally. */ ?>
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/BarlowCondensed-700.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Barlow-400.woff2" crossorigin>
@@ -36,15 +37,39 @@ function page_head(string $title, array $opt = []): void
 <?php endif; ?>
 </head>
 <body class="<?= $bare ? 'bare' : '' ?>">
+<?php
+// One nav definition, rendered twice: inline in the bar on wide screens, and
+// as a scrolling strip under it on phones. Icon AND label in both — icon-only
+// navigation costs discoverability.
+$tabs = [
+    'play'      => ['index.php',     'Play',      'court'],
+    'roster'    => ['roster.php',    'Roster',    'users'],
+    'standings' => ['standings.php', 'Standings', 'trophy'],
+    'courts'    => ['courts.php',    'Codes',     'qr'],
+    'reclub'    => ['reclub.php',    'Reclub',    'clipboard'],
+    'history'   => ['history.php',   'History',   'clock'],
+];
+$navLink = function (string $key, array $t) use ($active): string {
+    [$href, $label, $ico] = $t;
+    return '<a href="' . e($href) . '"'
+        . ($active === $key ? ' class="on" aria-current="page"' : '') . '>'
+        . icon($ico, 17) . e($label) . '</a>';
+};
+?>
 <?php if (!$bare): ?>
 <header class="topbar">
   <a class="brand" href="index.php">
-    <span class="brand-mark" aria-hidden="true">Q</span>
+    <span class="brand-mark"><img src="assets/brand/logo-96.png" alt="" width="40" height="40"></span>
     <span class="brand-text">
       <strong><?= e(APP_NAME) ?></strong>
       <small><?= e(APP_TAGLINE) ?></small>
     </span>
   </a>
+  <?php if (!empty($opt['nav'])): ?>
+  <nav class="topbar-nav" aria-label="Sections">
+    <?php foreach ($tabs as $key => $t) { echo $navLink($key, $t); } ?>
+  </nav>
+  <?php endif; ?>
   <?php $u = auth_user(); if ($u): ?>
   <div class="topbar-right">
     <span class="who"><?= e($u['display_name']) ?></span>
@@ -54,20 +79,7 @@ function page_head(string $title, array $opt = []): void
 </header>
 <?php if (!empty($opt['nav'])): ?>
 <nav class="tabs" aria-label="Sections">
-  <?php
-  // Icon + label on every item: icon-only navigation harms discoverability.
-  $tabs = [
-      'play'      => ['index.php',     'Play',     'court'],
-      'roster'    => ['roster.php',    'Roster',   'users'],
-      'standings' => ['standings.php', 'Standings','trophy'],
-      'courts'    => ['courts.php',    'Codes',    'qr'],
-      'reclub'    => ['reclub.php',    'Reclub',   'clipboard'],
-      'history'   => ['history.php',   'History',  'clock'],
-  ];
-  foreach ($tabs as $key => [$href, $label, $ico]):
-  ?>
-  <a href="<?= e($href) ?>"<?= $active === $key ? ' class="on" aria-current="page"' : '' ?>><?= icon($ico, 17) ?><?= e($label) ?></a>
-  <?php endforeach; ?>
+  <?php foreach ($tabs as $key => $t) { echo $navLink($key, $t); } ?>
 </nav>
 <?php endif; ?>
 <?php foreach (flash_take() as $f): ?>
@@ -83,7 +95,11 @@ function page_foot(): void
     ?>
 </main>
 <footer class="pagefoot">
-  <?= e(APP_NAME) ?> v<?= e(APP_VERSION) ?> · fair queue, frozen ratings, no data leaves this server
+  <span class="foot-left">
+    <span class="foot-badge"><?= icon('shield', 18) ?></span>
+    <span><?= e(APP_NAME) ?> v<?= e(APP_VERSION) ?> &nbsp;·&nbsp; fair queue, frozen ratings, no data leaves this server</span>
+  </span>
+  <span class="foot-right"><?= icon('lock', 14) ?> Local data only</span>
 </footer>
 <script src="assets/app.js?v=<?= e(APP_VERSION) ?>" defer></script>
 <?php if (!empty($GLOBALS['que_court3d'])): ?>
@@ -129,6 +145,31 @@ function court3d(array $session, array $onCourt): string
         . '</div>'
         . '<script type="application/json" id="court3d-data">'
         . json_encode($data) . '</script>';
+}
+
+/**
+ * A stat tile: ringed glyph, figure, label, sublabel. Kept as a helper so the
+ * row reads identically on every surface that shows one.
+ */
+function stat_card(string $ico, $value, string $label, string $sub = ''): string
+{
+    return '<div class="statcard">'
+        . '<span class="statcard-ring">' . icon($ico, 21) . '</span>'
+        . '<div><div class="v">' . e((string) $value) . '</div>'
+        . '<div class="k">' . e($label) . '</div>'
+        . ($sub !== '' ? '<p class="sub">' . e($sub) . '</p>' : '')
+        . '</div></div>';
+}
+
+/**
+ * A stable colour per court, so the same court reads the same on the dashboard,
+ * the board and the printed codes. Colour is never the only cue — every row
+ * also carries the court number and its status in words.
+ */
+function court_colour(int $court): string
+{
+    $wheel = ['#8fae9d', '#6cb6ff', '#ff8a5c', '#c9a227', '#f472b6', '#2ee89a', '#a78bfa', '#fcc63f'];
+    return $wheel[($court - 1) % count($wheel)];
 }
 
 /** gainIndex chip — positive means outperforming their DUPR. */

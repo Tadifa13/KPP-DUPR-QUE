@@ -8,13 +8,12 @@ echo json_encode([
     'start_url'        => './index.php',
     'scope'            => './',
     'display'          => 'standalone',
-    'background_color' => '#071c15',
-    'theme_color'      => '#0a2d20',
+    'background_color' => '#05100b',
+    'theme_color'      => '#05100b',
     'orientation'      => 'any',
-    'icons'            => [[
-        'src'     => 'assets/favicon.svg',
-        'sizes'   => 'any',
-        'type'    => 'image/svg+xml',
-        'purpose' => 'any maskable',
-    ]],
+    'icons'            => [
+        ['src' => 'assets/brand/logo-96.png',  'sizes' => '96x96',   'type' => 'image/png'],
+        ['src' => 'assets/brand/logo-180.png', 'sizes' => '180x180', 'type' => 'image/png'],
+        ['src' => 'assets/brand/logo-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'],
+    ],
 ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);

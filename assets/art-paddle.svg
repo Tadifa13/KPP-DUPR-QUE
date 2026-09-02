@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 320" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="pf" x1="80" y1="40" x2="250" y2="230" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1d6b48"/>
+      <stop offset="1" stop-color="#0c2c1e"/>
+    </linearGradient>
+    <linearGradient id="bf" x1="250" y1="150" x2="330" y2="230" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2ee89a"/>
+      <stop offset="1" stop-color="#12855a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#2ee89a" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#2ee89a" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="mesh" width="7" height="7" patternUnits="userSpaceOnUse">
+      <path d="M0 0h7M0 3.5h7M0 7h7" stroke="#3c8d68" stroke-width=".5" opacity=".45"/>
+      <path d="M0 0v7M3.5 0v7M7 0v7" stroke="#3c8d68" stroke-width=".5" opacity=".45"/>
+    </pattern>
+  </defs>
+
+  <!-- ambient wash behind the ball -->
+  <circle cx="292" cy="192" r="120" fill="url(#glow)"/>
+
+  <!-- orbital arcs -->
+  <g stroke="#2ee89a" fill="none" opacity=".2">
+    <path d="M28 258C70 128 196 34 336 44" stroke-width="1.4"/>
+    <path d="M14 288C62 142 208 40 372 56" stroke-width="1" opacity=".7"/>
+    <path d="M60 300C118 190 220 122 340 128" stroke-width="1" opacity=".5"/>
+  </g>
+  <circle cx="336" cy="44" r="3" fill="#2ee89a" opacity=".65"/>
+  <circle cx="60" cy="300" r="2.4" fill="#2ee89a" opacity=".45"/>
+  <circle cx="372" cy="56" r="2" fill="#2ee89a" opacity=".35"/>
+
+  <!-- paddle -->
+  <g transform="rotate(-24 168 150)">
+    <rect x="104" y="34" width="128" height="164" rx="60" fill="url(#pf)" stroke="#35a473" stroke-width="2.2"/>
+    <rect x="112" y="42" width="112" height="148" rx="54" fill="url(#mesh)" opacity=".55"/>
+    <rect x="152" y="196" width="32" height="80" rx="13" fill="#0f3626" stroke="#35a473" stroke-width="2"/>
+    <rect x="157" y="206" width="22" height="58" rx="9" fill="#164a34"/>
+    <rect x="148" y="268" width="40" height="16" rx="7" fill="#0c2c1e" stroke="#35a473" stroke-width="1.6"/>
+  </g>
+
+  <!-- ball -->
+  <circle cx="292" cy="192" r="46" fill="url(#bf)" stroke="#7cf3c1" stroke-width="2"/>
+  <g fill="#0a2a1c" opacity=".78">
+    <circle cx="272" cy="172" r="5.4"/><circle cx="300" cy="166" r="5"/>
+    <circle cx="316" cy="188" r="5.2"/><circle cx="304" cy="212" r="5.4"/>
+    <circle cx="276" cy="206" r="5"/><circle cx="292" cy="190" r="4.6"/>
+  </g>
+  <path d="M258 172a46 46 0 0 1 26-24" stroke="#a8f7d6" stroke-width="2.4" stroke-linecap="round" opacity=".55" fill="none"/>
+</svg>

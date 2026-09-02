@@ -41,9 +41,12 @@
 /* ------------------------------------------------------------ tokens ---- */
 :root {
   /* Ground. Never pure black — it smears on OLED and kills the depth cues. */
-  --bg-deep:      #04120c;
-  --bg-base:      #071a12;
-  --bg-elevated:  #0b2418;
+  --bg-deep:      #020806;
+  --bg-base:      #05100b;
+  --bg-elevated:  #0a1a13;
+
+  --gold:         #d9ad52;
+  --gold-soft:    #f0cf86;
 
   --surface:      rgba(255, 255, 255, .045);
   --surface-2:    rgba(255, 255, 255, .075);
@@ -97,8 +100,8 @@ body {
   margin: 0;
   min-height: 100dvh;
   background:
-    radial-gradient(120% 70% at 50% -10%, #10361f 0%, transparent 60%),
-    linear-gradient(180deg, var(--bg-base) 0%, var(--bg-deep) 70%, #030d08 100%);
+    radial-gradient(110% 60% at 50% -12%, #0c2c1c 0%, transparent 62%),
+    linear-gradient(180deg, var(--bg-base) 0%, var(--bg-deep) 76%, #010604 100%);
   background-attachment: fixed;
   color: var(--fg);
   font-family: Barlow, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -129,8 +132,9 @@ body::after {
 @keyframes drift-a { to { transform: translate3d(8vmin, 6vmin, 0) scale(1.12); } }
 @keyframes drift-b { to { transform: translate3d(-7vmin, -5vmin, 0) scale(1.15); } }
 
-main { max-width: 720px; margin: 0 auto; padding: var(--s4) var(--s4) var(--s7); }
-main.wide { max-width: 1080px; }
+main { max-width: 1180px; margin: 0 auto; padding: var(--s5) var(--s4) var(--s7); }
+main.narrow { max-width: 720px; }
+main.wide { max-width: 1180px; }
 
 /* --------------------------------------------------------------- type --- */
 h1, h2, h3, .display, .court-no, .score-big, .stat .v, .dupr {
@@ -405,10 +409,20 @@ tbody tr:nth-child(1) .rank { color: var(--accent); }
 .split { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
 
 .pagefoot {
-  max-width: 720px; margin: 0 auto;
+  max-width: 1180px; margin: 0 auto;
   padding: var(--s5) var(--s4) var(--s6);
-  font-size: 11.5px; color: var(--fg-dim); text-align: center;
+  border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--fg-dim);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s3); flex-wrap: wrap;
 }
+.pagefoot .foot-left { display: flex; align-items: center; gap: 10px; }
+.pagefoot .foot-badge {
+  width: 34px; height: 34px; border-radius: 10px; flex: none;
+  display: grid; place-items: center;
+  border: 1px solid var(--border); background: var(--surface); color: var(--primary);
+}
+.pagefoot .foot-right { display: flex; align-items: center; gap: 6px; }
 
 .live-dot {
   display: inline-block; width: 7px; height: 7px; border-radius: 50%;
@@ -507,4 +521,163 @@ body.bare main { max-width: 900px; padding-top: var(--s5); }
   }
   body::before, body::after { animation: none !important; }
   .reveal { opacity: 1 !important; transform: none !important; }
+}
+
+/* ===========================================================================
+   Dashboard surface
+   =========================================================================== */
+
+/* Brand mark: the gold monogram sits on its own black coin, which is how the
+   logo is drawn. Against the dark green ground it reads as an inlay rather
+   than a pasted-on square. */
+.brand-mark {
+  width: 40px; height: 40px; padding: 0; overflow: hidden;
+  background: #000; border: 1px solid rgba(217, 173, 82, .38);
+  box-shadow: 0 0 20px -6px rgba(217, 173, 82, .34);
+}
+.brand-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.brand-text small { color: var(--gold); }
+
+/* Inline navigation in the top bar on wide screens; the scrolling tab strip
+   underneath is kept for phones. */
+.topbar { gap: var(--s5); }
+.topbar-nav { display: none; }
+.topbar-nav a {
+  position: relative; display: inline-flex; align-items: center; gap: 7px;
+  padding: 0 4px; height: 62px; min-height: var(--tap);
+  font-size: 14px; font-weight: 500; color: var(--fg-muted);
+  text-decoration: none; white-space: nowrap;
+  transition: color var(--t-fast) var(--ease);
+}
+.topbar-nav a::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+  background: var(--primary); border-radius: 2px 2px 0 0;
+  transform: scaleX(0); transition: transform var(--t) var(--ease);
+}
+.topbar-nav a.on { color: var(--primary); font-weight: 600; }
+.topbar-nav a.on::after { transform: scaleX(1); }
+.topbar-nav a:hover { color: var(--fg); }
+
+/* ------------------------------------------------------------- hero ----- */
+.hero {
+  display: grid; grid-template-columns: 1fr; gap: var(--s5);
+  align-items: center;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border); border-radius: var(--r);
+  padding: var(--s5); margin-bottom: var(--s4);
+  box-shadow: var(--shadow-lift);
+  overflow: hidden;
+}
+.hero-art { display: none; }
+.hero-art img { width: 100%; height: auto; display: block; opacity: .9; }
+.hero-body h1 { margin-bottom: var(--s2); }
+.hero-body > p { max-width: 56ch; }
+
+/* Callout inside the hero — the single next action. */
+.callout {
+  display: flex; align-items: center; gap: var(--s4);
+  border: 1px solid var(--border); border-radius: var(--r-s);
+  background: rgba(0, 0, 0, .22); padding: var(--s4); margin-top: var(--s4);
+  flex-wrap: wrap;
+}
+.callout-ring {
+  width: 56px; height: 56px; border-radius: 50%; flex: none;
+  display: grid; place-items: center;
+  border: 1px solid rgba(46, 232, 154, .4); color: var(--primary);
+  background: rgba(46, 232, 154, .07);
+}
+.callout-body { flex: 1 1 260px; min-width: 0; }
+
+/* ------------------------------------------------------- stat cards ----- */
+.statgrid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--s3); margin-bottom: var(--s4);
+}
+.statcard {
+  display: flex; align-items: center; gap: var(--s3);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border); border-radius: var(--r);
+  padding: var(--s4); box-shadow: var(--shadow-lift);
+}
+.statcard-ring {
+  width: 46px; height: 46px; border-radius: 50%; flex: none;
+  display: grid; place-items: center;
+  border: 1px solid var(--border-strong); background: rgba(0, 0, 0, .28);
+  color: var(--fg-muted);
+}
+.statcard .v {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 30px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.statcard .k { font-size: 13px; font-weight: 600; margin-top: 3px; }
+.statcard .sub { font-size: 11.5px; color: var(--fg-dim); margin: 1px 0 0; }
+
+/* ----------------------------------------------------------- panels ----- */
+.dash { display: grid; grid-template-columns: 1fr; gap: var(--s3); align-items: start; }
+.panel {
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border); border-radius: var(--r);
+  box-shadow: var(--shadow-lift); overflow: hidden;
+}
+.panel-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: var(--s4) var(--s4) 0;
+  font-size: 12px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+  color: var(--primary);
+}
+.panel-body { padding: var(--s3) var(--s4) var(--s4); }
+.panel-note { font-size: 12.5px; color: var(--fg-dim); margin: 6px 0 var(--s3); }
+.panel-foot {
+  border-top: 1px solid var(--border); padding: 13px var(--s4);
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 13px; font-weight: 600; color: var(--fg-muted); text-decoration: none;
+  transition: color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease);
+}
+a.panel-foot:hover { color: var(--primary); background: rgba(255, 255, 255, .03); }
+
+/* Court list rows with a colour dot, as on the board. */
+.courtlist { display: flex; flex-direction: column; }
+.courtrow {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 0; border-bottom: 1px solid rgba(255, 255, 255, .04);
+  font-size: 14.5px;
+}
+.courtrow:last-child { border-bottom: 0; }
+.courtrow .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.courtrow .nm { flex: 1; font-weight: 500; }
+.courtrow .st { font-size: 13px; color: var(--fg-muted); }
+.courtrow.is-live .st { color: var(--primary); font-weight: 600; }
+.courtrow.is-pending .st { color: var(--accent); font-weight: 600; }
+
+/* Rules checklist. */
+.rules { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.rules li { display: flex; gap: 9px; align-items: flex-start; font-size: 13.5px; color: var(--fg-muted); }
+.rules .ico { color: var(--primary); margin-top: 2px; }
+
+/* Empty states with a ringed glyph, matching the dashboard language. */
+.emptystate { text-align: center; padding: var(--s6) var(--s3); }
+.emptystate-ring {
+  width: 58px; height: 58px; border-radius: 50%; margin: 0 auto var(--s3);
+  display: grid; place-items: center;
+  border: 1px solid var(--border-strong); background: rgba(0, 0, 0, .25);
+  color: var(--fg-dim);
+}
+.emptystate .t { font-size: 15px; font-weight: 600; color: var(--fg); }
+.emptystate .d { font-size: 12.5px; color: var(--fg-dim); margin-top: 4px; }
+
+/* Skeleton rows stand in for a table that has no data yet, so the shape of
+   what is coming is legible before anything is played. */
+.skel-row { display: flex; align-items: center; gap: var(--s4); padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+.skel { background: rgba(255, 255, 255, .055); border-radius: 6px; height: 11px; }
+.skel.dot { width: 18px; height: 18px; border-radius: 50%; flex: none; }
+.skel.wide { flex: 1; max-width: 190px; }
+.skel.cell { width: 54px; }
+
+@media (min-width: 900px) {
+  .tabs { display: none; }
+  .topbar-nav { display: flex; align-items: center; gap: var(--s5); flex: 1; }
+  .topbar { padding-top: 0; padding-bottom: 0; min-height: 62px; }
+  .hero { grid-template-columns: minmax(240px, 340px) 1fr; gap: var(--s6); padding: var(--s5) var(--s6); }
+  .hero-art { display: block; }
+  .dash { grid-template-columns: repeat(3, 1fr); }
 }
