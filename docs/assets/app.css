@@ -765,3 +765,73 @@ a.panel-foot:hover { color: var(--primary); background: rgba(255, 255, 255, .03)
   .pod-1 .pod-medal { width: 42px; height: 42px; font-size: 15px; }
   .pod-1 .pod-name { font-size: 19px; }
 }
+
+/* ===========================================================================
+   Browser build — steppers, segmented choice, manual picker
+   =========================================================================== */
+
+/* Courts +/- during play. */
+.stepper {
+  display: inline-flex; align-items: center; gap: 2px;
+  border: 1px solid var(--border); border-radius: var(--r-s);
+  background: var(--surface); padding: 3px;
+}
+.stepper .btn { min-height: 34px; padding: 0 10px; }
+.stepper-v {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 19px; font-weight: 700;
+  min-width: 30px; text-align: center; font-variant-numeric: tabular-nums;
+}
+
+/* Doubles / singles before the session starts. */
+.segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.segmented input { position: absolute; opacity: 0; pointer-events: none; }
+.segmented span {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: var(--tap); padding: 0 12px; border-radius: var(--r-s);
+  border: 1px solid var(--border); background: var(--surface);
+  font-size: 14.5px; font-weight: 600; cursor: pointer;
+  transition: border-color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.segmented label:hover span { border-color: var(--border-strong); }
+.segmented input:checked + span {
+  border-color: var(--primary); color: var(--primary);
+  background: rgba(46, 232, 154, .1);
+  box-shadow: 0 0 24px -12px var(--primary-glow);
+}
+.segmented input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* Manual match picker. */
+.picker { margin-top: var(--s2); }
+.picklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 6px; }
+.pick {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  min-height: var(--tap); padding: 8px 11px; text-align: left;
+  border: 1px solid var(--border); border-radius: var(--r-s);
+  background: var(--surface); color: var(--fg); cursor: pointer;
+  font-family: inherit;
+  transition: border-color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.pick:hover:not(:disabled) { border-color: var(--border-strong); background: var(--surface-2); }
+.pick:active:not(:disabled) { transform: scale(.97); }
+.pick:disabled { opacity: .34; cursor: not-allowed; }
+.pick.on {
+  border-color: var(--primary); background: rgba(46, 232, 154, .12);
+  box-shadow: 0 0 22px -12px var(--primary-glow);
+}
+.pick-name { font-size: 14.5px; font-weight: 600; }
+.pick-meta { font-size: 11.5px; color: var(--fg-dim); font-variant-numeric: tabular-nums; }
+.pick.on .pick-meta { color: var(--primary); }
+
+/* First-run guidance. */
+.steps { display: flex; flex-direction: column; gap: var(--s3); margin: var(--s4) 0 0; counter-reset: step; }
+.step { display: flex; gap: var(--s3); align-items: flex-start; }
+.step-n {
+  width: 30px; height: 30px; flex: none; border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700;
+  border: 1px solid var(--border-strong); background: rgba(0,0,0,.28); color: var(--fg-muted);
+}
+.step.done .step-n { background: linear-gradient(150deg, var(--primary), var(--primary-deep)); color: var(--on-primary); border-color: transparent; }
+.step-b { flex: 1; min-width: 0; }
+.step-t { display: block; font-size: 15px; font-weight: 600; }
+.step-d { display: block; font-size: 12.5px; color: var(--fg-dim); margin-top: 2px; line-height: 1.5; }

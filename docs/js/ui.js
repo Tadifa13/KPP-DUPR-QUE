@@ -8,6 +8,9 @@ import * as S from './store.js';
 import { mountCourt3d, unmount as unmountCourt3d } from './court3d.js';
 
 let state = S.load();
+// Transient, not persisted: which court is being filled by hand, and who is
+// picked so far.
+let manual = { court: null, ids: [] };
 let view = location.hash.replace('#', '') || 'play';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -35,6 +38,9 @@ const ICONS = {
   target: '<circle cx="12" cy="12" r="8.75"/><circle cx="12" cy="12" r="4.75"/><circle cx="12" cy="12" r="1"/>',
   lock: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.25 10.5V7.75a3.75 3.75 0 0 1 7.5 0v2.75"/>',
   chevron: '<path d="M9 5.5 15.5 12 9 18.5"/>',
+  plus: '<path d="M12 5.5v13M5.5 12h13"/>',
+  minus: '<path d="M5.5 12h13"/>',
+  sparkle: '<path d="M12 3.5 13.7 9l5.5 1.7-5.5 1.7L12 18l-1.7-5.6L4.8 10.7 10.3 9z"/><path d="M18.5 15.5l.7 2.1 2.1.7-2.1.7-.7 2.1-.7-2.1-2.1-.7 2.1-.7z"/>',
 };
 const icon = (n, size = 20) => ICONS[n]
   ? `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
@@ -47,6 +53,13 @@ const courtColour = (c) => COURT_WHEEL[(c - 1) % COURT_WHEEL.length];
 
 const fmtDupr = (v) => Number(v).toFixed(2);
 const fmtGain = (v) => (v > 0 ? '+' : '') + Number(v).toFixed(1);
+/* Adjustments are two-decimal values; the one-decimal gainIndex format turns
+   -0.01 into a meaningless "-0.0". Also avoids rendering a signed zero. */
+const fmtAdj = (v) => {
+  const n = Number(v);
+  if (Math.abs(n) < 0.005) return '0.00';
+  return (n > 0 ? '+' : '') + n.toFixed(2);
+};
 
 function toast(msg, tone = 'ok') {
   const el = document.createElement('div');
@@ -129,8 +142,29 @@ function viewPlay() {
             <div class="callout">
               <span class="callout-ring">${icon('users', 24)}</span>
               <div class="callout-body">
-                <p style="margin:0 0 12px">You need at least four players before a session can call a match.</p>
-                <a class="btn btn-primary" href="#roster">Add players ${icon('chevron', 15)}</a>
+                <p style="margin:0 0 4px"><strong>${players.length === 0 ? 'Nothing here yet — start with players.' : `${4 - players.length} more player${4 - players.length === 1 ? '' : 's'} needed.`}</strong></p>
+                <p class="hint" style="margin:0 0 12px">A doubles match needs four, so the queue cannot start below that.</p>
+                <div class="btn-row">
+                  <a class="btn btn-primary" style="flex:2" href="#roster">${icon('user-plus', 17)}Add players</a>
+                  <button class="btn" data-act="sample-roster">${icon('sparkle', 16)}Use 8 sample players</button>
+                </div>
+              </div>
+            </div>
+            <div class="steps">
+              <div class="step${players.length ? ' done' : ''}">
+                <span class="step-n">1</span>
+                <span class="step-b"><span class="step-t">Add your players</span>
+                  <span class="step-d">Name and DUPR each, or paste a whole list at once.</span></span>
+              </div>
+              <div class="step">
+                <span class="step-n">2</span>
+                <span class="step-b"><span class="step-t">Start the session</span>
+                  <span class="step-d">Choose courts, target score, and doubles or singles.</span></span>
+              </div>
+              <div class="step">
+                <span class="step-n">3</span>
+                <span class="step-b"><span class="step-t">Call matches</span>
+                  <span class="step-d">Auto uses the fair queue, or pick the four yourself.</span></span>
               </div>
             </div>` : `
             <form class="callout" style="display:block" data-act="start-session">
@@ -143,8 +177,14 @@ function viewPlay() {
                 <div class="field"><label for="starget">Games to</label>
                   <select id="starget" name="target">${E.CFG.VALID_TARGETS.map((t) =>
                     `<option value="${t}"${t === E.CFG.DEFAULT_TARGET ? ' selected' : ''}>${t}</option>`).join('')}</select></div>
-                <div class="field"><label for="sformat">Format</label>
-                  <select id="sformat" name="format"><option value="doubles">Doubles</option><option value="singles">Singles</option></select></div>
+              </div>
+              <div class="field">
+                <label>Format</label>
+                <div class="segmented">
+                  <label><input type="radio" name="format" value="doubles" checked><span>${icon('users', 16)}Doubles</span></label>
+                  <label><input type="radio" name="format" value="singles"><span>${icon('play', 16)}Singles</span></label>
+                </div>
+                <p class="hint">Doubles picks four players a match; singles picks two. Fixed once the session starts.</p>
               </div>
               <button class="btn btn-primary btn-block" type="submit">${icon('play', 18)}Start session</button>
             </form>`}
@@ -185,7 +225,16 @@ function viewPlay() {
       ${statCard('clipboard', roster.length, 'Roster', 'In this session')}
     </div>
     ${court3dBlock(s, onCourt)}
-    <h2>Courts</h2>`;
+    <div class="split" style="margin:var(--s6) 0 var(--s3)">
+      <h2 style="margin:0">Courts</h2>
+      <div class="stepper" role="group" aria-label="Number of courts">
+        <button class="btn btn-ghost btn-sm" data-act="courts-minus"
+                ${s.courts <= 1 ? 'disabled' : ''} aria-label="One court fewer">${icon('minus', 16)}</button>
+        <span class="stepper-v" aria-live="polite">${s.courts}</span>
+        <button class="btn btn-ghost btn-sm" data-act="courts-plus"
+                ${s.courts >= E.CFG.MAX_COURTS ? 'disabled' : ''} aria-label="One court more">${icon('plus', 16)}</button>
+      </div>
+    </div>`;
 
   for (let c = 1; c <= s.courts; c++) {
     const m = onCourt[c];
@@ -195,9 +244,15 @@ function viewPlay() {
         <div class="card-head"><span class="court-no">
           <span class="dot" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${courtColour(c)}"></span>
           Court ${c}</span><span class="chip chip-muted">Open</span></div>
-        <button class="btn btn-primary btn-block" data-act="call" data-court="${c}"${ready.length < need ? ' disabled' : ''}>
-          ${icon('play', 18)}Call next match</button>
-        ${ready.length < need ? '<p class="reason">Not enough ready players to fill a court.</p>' : ''}
+        ${manual.court === c ? manualPicker(c, need, roster, games, names)
+          : `<div class="btn-row">
+               <button class="btn btn-primary" style="flex:2" data-act="call" data-court="${c}"${ready.length < need ? ' disabled' : ''}>
+                 ${icon('play', 18)}Auto match</button>
+               <button class="btn" data-act="manual-open" data-court="${c}"${ready.length < need ? ' disabled' : ''}>
+                 ${icon('users', 16)}Manual</button>
+             </div>
+             ${ready.length < need ? '<p class="reason">Not enough ready players to fill a court.</p>'
+               : '<p class="reason">Auto uses the fair queue. Manual lets you pick, and tells you what it costs.</p>'}`}
       </div>`;
       continue;
     }
@@ -280,6 +335,64 @@ function viewPlay() {
       <button class="btn btn-danger" data-act="end-session">${icon('x', 17)}End session</button>
     </div>`;
   return html;
+}
+
+/**
+ * Pick players by hand for one court. Shows the live consequence of the choice
+ * — bracket, evenness, and whether it jumps the fair queue — so an override is
+ * a decision rather than an accident.
+ */
+function manualPicker(court, need, roster, games, names) {
+  const s = state.session;
+  const committed = new Set();
+  openMatches().forEach((m) => [...m.team1, ...m.team2].forEach((id) => committed.add(id)));
+  const pickable = roster.filter((p) => p.status === 'ready' && !committed.has(p.id))
+    .sort((a, b) => (games[a.id] - games[b.id]) || (a.name < b.name ? -1 : 1));
+
+  const chosen = manual.ids.filter((id) => pickable.some((p) => p.id === id));
+  const preview = chosen.length === need
+    ? E.manualMatch(roster, s.matches, chosen, s.format)
+    : null;
+
+  return `
+    <div class="picker">
+      <p class="panel-note" style="margin-top:0">
+        Pick ${need} player${need === 1 ? '' : 's'} — ${chosen.length}/${need} chosen
+      </p>
+      <div class="picklist">
+        ${pickable.map((p) => {
+          const on = chosen.includes(p.id);
+          const g = games[p.id] || 0;
+          const eff = E.effectiveRating(Number(p.dupr), Number(p.adjustment) || 0);
+          return `<button class="pick${on ? ' on' : ''}" data-act="manual-toggle" data-id="${p.id}"
+                    ${!on && chosen.length >= need ? 'disabled' : ''} aria-pressed="${on}">
+            <span class="pick-name">${esc(p.name)}</span>
+            <span class="pick-meta">${g}g · ${fmtDupr(eff)}</span>
+          </button>`;
+        }).join('')}
+      </div>
+      ${preview ? `
+        <div class="card tight" style="margin-top:var(--s3)">
+          <div class="card-head">
+            <span class="court-no">Preview</span>
+            <div class="chips">${bracketChip(preview.bracket)}
+              <span class="chip ${preview.quality >= 75 ? 'chip-good' : preview.quality >= 45 ? 'chip-warn' : 'chip-bad'}">${preview.quality}% even</span>
+              <span class="chip ${preview.withinWindow ? 'chip-good' : 'chip-warn'}">${preview.withinWindow ? 'fair queue' : 'jumps the queue'}</span>
+            </div>
+          </div>
+          <div class="matchup">
+            <div class="side">${preview.team1.map((id) => `<span class="pname">${esc(names[id])}</span>`).join('')}</div>
+            <div class="vs">VS</div>
+            <div class="side right">${preview.team2.map((id) => `<span class="pname">${esc(names[id])}</span>`).join('')}</div>
+          </div>
+          <p class="reason">${esc(preview.reason)}</p>
+        </div>` : ''}
+      <div class="btn-row" style="margin-top:var(--s3)">
+        <button class="btn btn-primary" style="flex:2" data-act="manual-confirm" data-court="${court}"${preview ? '' : ' disabled'}>
+          ${icon('check', 17)}Call this match</button>
+        <button class="btn btn-ghost" data-act="manual-cancel">${icon('x', 15)}Cancel</button>
+      </div>
+    </div>`;
 }
 
 /* The one animated element on the page: court occupancy at a glance. */
@@ -374,7 +487,64 @@ function viewStandings() {
       </tr>`).join('')}</tbody>
     </table></div>
     <p class="hint">Form is <strong>gainIndex</strong>: performance against what their rating predicted, weighted by margin of victory. Provisional until ${E.CFG.EVIDENCE_GAMES} games.</p>
-    </div>`;
+    </div>
+    ${state.session ? calibrationPanel(gain, roster) : ''}`;
+}
+
+/**
+ * Rating calibration. gainIndex measures how a player is doing against what
+ * their DUPR predicted; this turns that into a session-only adjustment.
+ *
+ * It stays advisory on purpose: nothing moves until someone presses a button,
+ * the official DUPR on the roster is never touched, matches already played keep
+ * the rating frozen onto them, and every adjustment is clamped to
+ * ±ADJUST_CLAMP so no amount of pressing can invent a new player.
+ */
+function calibrationPanel(gain, roster) {
+  const rows = roster.slice().sort((a, b) => (a.name < b.name ? -1 : 1));
+  const anyReady = rows.some((p) => {
+    const g = gain[p.id] || { gainIndex: 0, evidence: 0 };
+    return E.suggestedAdjustment(g.gainIndex, g.evidence) !== (p.adjustment || 0);
+  });
+
+  return `
+    <section class="panel" style="margin-top:var(--s5)">
+      <p class="panel-head">${icon('sparkle', 15)}Rating calibration</p>
+      <div class="panel-body">
+        <p class="panel-note">
+          Adjustments apply to <strong>this session only</strong> and are clamped to
+          ±${E.CFG.ADJUST_CLAMP.toFixed(2)} DUPR. Official ratings are never changed, and
+          games already played keep the rating frozen onto them.
+        </p>
+        <div class="btn-row" style="margin-bottom:var(--s3)">
+          <button class="btn btn-amber" style="flex:2" data-act="calibrate-auto"${anyReady ? '' : ' disabled'}>
+            ${icon('sparkle', 17)}Auto-calibrate from results</button>
+          <button class="btn btn-ghost" data-act="calibrate-reset">${icon('rotate', 16)}Reset</button>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Player</th><th class="num">Base</th><th class="num">Adj</th>
+            <th class="num">Playing at</th><th class="num">Suggested</th><th></th></tr></thead>
+          <tbody>${rows.map((p) => {
+            const g = gain[p.id] || { gainIndex: 0, evidence: 0 };
+            const want = E.suggestedAdjustment(g.gainIndex, g.evidence);
+            const adj = p.adjustment || 0;
+            const eff = E.effectiveRating(Number(p.dupr), adj);
+            return `<tr>
+              <td>${esc(p.name)}</td>
+              <td class="num">${fmtDupr(p.dupr)}</td>
+              <td class="num">${adj ? fmtAdj(adj) : '—'}</td>
+              <td class="num"><strong>${fmtDupr(eff)}</strong></td>
+              <td class="num">${want ? fmtAdj(want) : '<span class="muted">—</span>'}</td>
+              <td><div style="display:flex;gap:4px;justify-content:flex-end">
+                <button class="btn btn-ghost btn-sm" data-act="calibrate-one" data-id="${p.id}" data-delta="-0.25" aria-label="Lower ${esc(p.name)}">${icon('minus', 14)}</button>
+                <button class="btn btn-ghost btn-sm" data-act="calibrate-one" data-id="${p.id}" data-delta="0.25" aria-label="Raise ${esc(p.name)}">${icon('plus', 14)}</button>
+              </div></td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table></div>
+        <p class="hint">Suggested is withheld until a player has ${E.CFG.EVIDENCE_GAMES} games, and a perfect record only ever proposes half the clamp.</p>
+      </div>
+    </section>`;
 }
 
 function gainChip(gain, evidence) {
@@ -741,6 +911,106 @@ const ACTIONS = {
     S.download('kamrynne-que-backup-' + new Date().toISOString().slice(0, 10) + '.json',
       S.exportJson(state), 'application/json');
     toast('Backup downloaded. Keep it — this data lives only in this browser.');
+  },
+
+  'sample-roster'() {
+    const sample = [
+      ['Ana Cruz', 3.40], ['Ben Ortiz', 3.55], ['Cy Delos', 3.25], ['Dee Lim', 3.60],
+      ['Eli Reyes', 3.35], ['Fay Cheng', 3.50], ['Gus Ramos', 3.45], ['Hana Ito', 3.30],
+    ];
+    sample.forEach(([name, dupr]) => {
+      if (state.players.some((p) => p.name === name)) return;
+      state.players.push({ id: S.uid('p_'), name, dupr, archived: false });
+    });
+    commit('Eight sample players added — edit or remove them on the Roster tab.');
+  },
+
+  'courts-plus'() {
+    const s = state.session;
+    if (s.courts >= E.CFG.MAX_COURTS) return;
+    s.courts += 1;
+    commit('Court ' + s.courts + ' opened.');
+  },
+
+  'courts-minus'() {
+    const s = state.session;
+    if (s.courts <= 1) return;
+    // Never close a court out from under a game in progress.
+    if (openMatches().some((m) => m.court === s.courts)) {
+      toast('Court ' + s.courts + ' has a game on it. Finish or clear it first.', 'warn');
+      return;
+    }
+    if (manual.court === s.courts) manual = { court: null, ids: [] };
+    s.courts -= 1;
+    commit('Court closed — now ' + s.courts + '.');
+  },
+
+  'manual-open'(el) {
+    manual = { court: Number(el.dataset.court), ids: [] };
+    render();
+  },
+
+  'manual-cancel'() {
+    manual = { court: null, ids: [] };
+    render();
+  },
+
+  'manual-toggle'(el) {
+    const id = el.dataset.id;
+    const need = state.session.format === 'singles' ? 2 : 4;
+    const i = manual.ids.indexOf(id);
+    if (i >= 0) manual.ids.splice(i, 1);
+    else if (manual.ids.length < need) manual.ids.push(id);
+    render();
+  },
+
+  'manual-confirm'(el) {
+    const s = state.session;
+    const court = Number(el.dataset.court);
+    const proposal = E.manualMatch(sessionPlayers(), s.matches, manual.ids, s.format);
+    if (!proposal) { toast('Pick the full group first.', 'warn'); return; }
+    s.matches.push({
+      id: S.uid('m_'), court, target: s.target, format: s.format,
+      bracket: proposal.bracket, team1: proposal.team1, team2: proposal.team2,
+      avg1: proposal.avg1, avg2: proposal.avg2, exp1: proposal.exp1,
+      quality: proposal.quality, ratingSnapshot: proposal.ratingSnapshot,
+      reason: proposal.reason, backToBack: proposal.backToBack,
+      manual: true, state: 'pending', s1: null, s2: null, createdAt: Date.now(),
+    });
+    manual = { court: null, ids: [] };
+    commit('Court ' + court + ' called by hand.');
+  },
+
+  'calibrate-one'(el) {
+    const p = state.session.players[el.dataset.id];
+    if (!p) return;
+    const delta = Number(el.dataset.delta);
+    p.adjustment = E.phpRound(E.clamp((p.adjustment || 0) + delta,
+      -E.CFG.ADJUST_CLAMP, E.CFG.ADJUST_CLAMP), 2);
+    commit();
+  },
+
+  'calibrate-auto'() {
+    const { gain, roster } = gainAndStandings();
+    let n = 0;
+    roster.forEach((p) => {
+      const g = gain[p.id] || { gainIndex: 0, evidence: 0 };
+      const want = E.suggestedAdjustment(g.gainIndex, g.evidence);
+      const delta = E.phpRound(want - (p.adjustment || 0), 2);
+      if (Math.abs(delta) >= 0.01) {
+        state.session.players[p.id].adjustment = want;
+        n++;
+      }
+    });
+    commit(n
+      ? n + ' player' + (n === 1 ? '' : 's') + ' recalibrated from their results.'
+      : 'Nothing to change — nobody has enough games yet.', n ? 'ok' : 'warn');
+  },
+
+  'calibrate-reset'() {
+    if (!confirm('Clear every session adjustment and play everyone at their official DUPR?')) return;
+    Object.values(state.session.players).forEach((p) => { p.adjustment = 0; });
+    commit('Adjustments cleared.', 'warn');
   },
 
   'export-txt'(el) {

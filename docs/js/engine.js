@@ -480,6 +480,85 @@ export function nextMatch(roster, matches, exclude = [], format = 'doubles') {
   };
 }
 
+/**
+ * Build a proposal from players the organizer picked by hand.
+ *
+ * The engine still chooses the pairing within the group and still reports
+ * bracket and quality, so a manual call is described the same way an automatic
+ * one is. It deliberately does NOT enforce the fairness window: overriding it
+ * is the whole point of picking by hand. What it does instead is report what
+ * the override costs, so the choice is informed rather than silent.
+ */
+export function manualMatch(roster, matches, ids, format = 'doubles') {
+  const groupSize = format === 'singles' ? 2 : 4;
+  if (!Array.isArray(ids) || ids.length !== groupSize) return null;
+
+  const games = gamesPlayed(roster, matches);
+  const byId = {};
+  roster.forEach((p) => { byId[p.id] = p; });
+
+  const group = ids.map((id) => {
+    const p = byId[id];
+    if (!p) return null;
+    return {
+      id: p.id,
+      name: p.name,
+      eff: effectiveRating(Number(p.dupr), Number(p.adjustment) || 0),
+      games: games[id] || 0,
+      wait: minutesSince(p.queuedAt),
+      boost: Number(p.priorityBoost) || 0,
+      backToBack: (Number(p.lastPlayedAt) || 0) > (Number(p.lastSatAt) || 0),
+    };
+  });
+  if (group.some((g) => g === null)) return null;
+
+  const history = pairHistory(matches);
+  const pairing = groupSize === 2
+    ? {
+        team1: [group[0]], team2: [group[1]],
+        cost: pairingCost([group[0]], [group[1]], history),
+        avg1: group[0].eff, avg2: group[1].eff,
+        diff: Math.abs(group[0].eff - group[1].eff),
+      }
+    : bestPairing(group, history);
+
+  const exp1 = expectedScore(pairing.avg1, pairing.avg2);
+  const snapshot = {};
+  group.forEach((g) => { snapshot[g.id] = { official: g.eff }; });
+
+  // What the fairness window would have said about this group.
+  const candidates = buildCandidates(roster, matches, []);
+  const floor = gamesFloor(candidates, groupSize);
+  const gs = group.map((g) => g.games);
+  const withinWindow = floor !== null
+    && Math.min(...gs) <= floor && Math.max(...gs) <= floor + 1;
+  const bracket = commonBracket(group.map((g) => g.eff));
+
+  const notes = [];
+  if (!withinWindow && floor !== null) {
+    const behind = Math.max(...gs) - floor;
+    notes.push(`outside the fair queue — ${behind} game${behind === 1 ? '' : 's'} ahead of the field`);
+  }
+  if (bracket === null) notes.push('mixed brackets');
+  const btb = group.filter((g) => g.backToBack).length;
+  if (btb) notes.push(`${btb} player${btb === 1 ? '' : 's'} straight back on`);
+
+  return {
+    team1: pairing.team1.map((g) => g.id),
+    team2: pairing.team2.map((g) => g.id),
+    avg1: phpRound(pairing.avg1, 2),
+    avg2: phpRound(pairing.avg2, 2),
+    exp1: phpRound(exp1, 4),
+    quality: matchQuality(exp1),
+    bracket,
+    backToBack: btb,
+    ratingSnapshot: snapshot,
+    manual: true,
+    withinWindow,
+    reason: 'Picked by hand' + (notes.length ? ' · ' + notes.join(' · ') : ' · within the fair queue'),
+  };
+}
+
 /* -------------------------------------------------------------- input ---- */
 
 /** One player per line, "Name D.DD", with per-line error reporting. */
