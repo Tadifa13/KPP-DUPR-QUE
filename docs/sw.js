@@ -1,7 +1,23 @@
-/* KAMRYNNE QUE — browser build service worker.
-   Everything is static, so the whole app is precached and served cache-first.
-   Once this has run, the app opens with no network at all. */
-const VERSION = 'que-static-v1.2.0';
+/* ===========================================================================
+   KAMRYNNE QUE — browser build service worker.
+
+   Strategy is split by how the file behaves, not by convenience:
+
+     - the page and its code (HTML, JS, CSS, manifest) are NETWORK-FIRST with a
+       cache fallback. Cache-first here meant a returning visitor kept getting
+       the previous build and needed two refreshes before an update appeared —
+       the app looked broken or missing features that had already shipped.
+       Network-first costs one request when online and still works offline.
+
+     - fonts and images are CACHE-FIRST. They are large, they never change
+       without a filename or VERSION change, and re-fetching them every visit
+       is waste.
+
+   Bump VERSION whenever anything in SHELL changes.
+   =========================================================================== */
+
+const VERSION = 'que-static-v2.0.0';
+
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './assets/app.css', './assets/art-paddle.svg',
@@ -11,30 +27,56 @@ const SHELL = [
   './js/engine.js', './js/store.js', './js/ui.js', './js/court3d.js',
 ];
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(VERSION)
-    .then((c) => c.addAll(SHELL))
-    .then(() => self.skipWaiting()));
+/** Immutable by nature: only ever replaced by a new VERSION. */
+const CACHE_FIRST = /\.(woff2|png|svg|ico|jpg|jpeg)$/i;
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(VERSION)
+      .then((cache) => cache.addAll(SHELL))
+      .then(() => self.skipWaiting())
+  );
 });
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys()
-    .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
-    .then(() => self.clients.claim()));
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
 });
 
-self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
-  const url = new URL(e.request.url);
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  e.respondWith(
-    caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {
-      if (res && res.status === 200) {
-        const copy = res.clone();
-        caches.open(VERSION).then((c) => c.put(e.request, copy));
-      }
-      return res;
-    }).catch(() => caches.match('./index.html')))
+  if (CACHE_FIRST.test(url.pathname)) {
+    event.respondWith(
+      caches.match(request).then((hit) => hit || fetch(request).then((res) => {
+        if (res && res.status === 200) {
+          const copy = res.clone();
+          caches.open(VERSION).then((c) => c.put(request, copy));
+        }
+        return res;
+      }))
+    );
+    return;
+  }
+
+  // Everything else: try the network, fall back to cache, then to the shell.
+  event.respondWith(
+    fetch(request)
+      .then((res) => {
+        if (res && res.status === 200) {
+          const copy = res.clone();
+          caches.open(VERSION).then((c) => c.put(request, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(request)
+        .then((hit) => hit || caches.match('./index.html')))
   );
 });
