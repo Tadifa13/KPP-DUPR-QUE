@@ -96,7 +96,7 @@ page_head('Roster', ['nav' => true, 'active' => 'roster']);
              min="<?= DUPR_MIN ?>" max="<?= DUPR_MAX ?>" value="<?= DUPR_DEFAULT ?>" required inputmode="decimal">
     </div>
   </div>
-  <button class="btn btn-primary btn-block" type="submit">Add player</button>
+  <button class="btn btn-primary btn-block" type="submit"><?= icon('user-plus', 17) ?>Add player</button>
 </form>
 
 <details class="card tight">

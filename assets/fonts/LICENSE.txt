@@ -1,0 +1,7 @@
+Barlow and Barlow Condensed
+Copyright (c) Jeremy Tribby
+Licensed under the SIL Open Font License, Version 1.1
+https://openfontlicense.org
+
+Bundled here rather than loaded from a font CDN so the application keeps
+working with no internet connection.

@@ -70,8 +70,8 @@ $courtUrl = fn(int $c): string => str_replace('spectate.php', 'court.php', $boar
   </p>
 
   <div class="btn-row" style="margin-bottom:18px">
-    <button class="btn btn-primary" type="button" onclick="window.print()">Print sheet</button>
-    <a class="btn btn-ghost" href="qr.php?b=<?= e($token) ?>&amp;s=14" download="board-qr.svg">Download board code</a>
+    <button class="btn btn-primary" type="button" onclick="window.print()"><?= icon('printer', 17) ?>Print sheet</button>
+    <a class="btn btn-ghost" href="qr.php?b=<?= e($token) ?>&amp;s=14" download="board-qr.svg"><?= icon('download', 16) ?>Download board code</a>
   </div>
 
   <div class="flash flash-warn" style="margin:0 0 18px">

@@ -167,7 +167,7 @@ if (!$session) {
           </select>
         </div>
       </div>
-      <button class="btn btn-primary btn-block" type="submit">Start session</button>
+      <button class="btn btn-primary btn-block" type="submit"><?= icon('play', 18) ?>Start session</button>
     </form>
     <?php endif; ?>
     <?php
@@ -221,6 +221,8 @@ page_head('Play', ['nav' => true, 'active' => 'play']);
   <div class="stat"><div class="k">Roster</div><div class="v"><?= count($roster) ?></div></div>
 </div>
 
+<?= court3d($session, $onCourt) ?>
+
 <h2>Courts</h2>
 <?php for ($court = 1; $court <= (int) $session['courts']; $court++):
     $m = $onCourt[$court] ?? null; ?>
@@ -237,7 +239,7 @@ page_head('Play', ['nav' => true, 'active' => 'play']);
         <input type="hidden" name="court" value="<?= $court ?>">
         <button class="btn btn-primary btn-block" type="submit"
           <?= count($ready) < ($session['format'] === 'singles' ? 2 : 4) ? 'disabled' : '' ?>>
-          Call next match
+          <?= icon('play', 18) ?>Call next match
         </button>
       </form>
       <?php if (count($ready) < ($session['format'] === 'singles' ? 2 : 4)): ?>
@@ -270,13 +272,13 @@ page_head('Play', ['nav' => true, 'active' => 'play']);
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="start_match">
             <input type="hidden" name="id" value="<?= e($m['id']) ?>">
-            <button class="btn btn-primary btn-block" type="submit">Start game</button>
+            <button class="btn btn-primary btn-block" type="submit"><?= icon('play', 18) ?>Start game</button>
           </form>
           <form method="post">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="cancel_match">
             <input type="hidden" name="id" value="<?= e($m['id']) ?>">
-            <button class="btn btn-ghost" type="submit">Redraw</button>
+            <button class="btn btn-ghost" type="submit"><?= icon('rotate', 16) ?>Redraw</button>
           </form>
         </div>
       <?php else: ?>
@@ -285,17 +287,17 @@ page_head('Play', ['nav' => true, 'active' => 'play']);
           <input type="hidden" name="action" value="complete_match">
           <input type="hidden" name="id" value="<?= e($m['id']) ?>">
           <div class="field-row">
-            <div class="field">
+            <div class="field score-input">
               <label>Side 1</label>
               <input type="number" name="s1" min="0" max="99" inputmode="numeric" required>
             </div>
-            <div class="field">
+            <div class="field score-input">
               <label>Side 2</label>
               <input type="number" name="s2" min="0" max="99" inputmode="numeric" required>
             </div>
           </div>
           <div class="btn-row">
-            <button class="btn btn-primary" style="flex:2" type="submit">Record result</button>
+            <button class="btn btn-primary" style="flex:2" type="submit"><?= icon('check', 18) ?>Record result</button>
           </div>
           <p class="hint">Winner must finish exactly on <?= (int) $m['target'] ?>.</p>
         </form>
@@ -303,7 +305,7 @@ page_head('Play', ['nav' => true, 'active' => 'play']);
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="cancel_match">
           <input type="hidden" name="id" value="<?= e($m['id']) ?>">
-          <button class="btn btn-ghost btn-sm" type="submit">Abandon game</button>
+          <button class="btn btn-ghost btn-sm" type="submit"><?= icon('x', 15) ?>Abandon game</button>
         </form>
       <?php endif; ?>
     </div>
@@ -345,14 +347,14 @@ page_head('Play', ['nav' => true, 'active' => 'play']);
         <input type="hidden" name="action" value="boost">
         <input type="hidden" name="player" value="<?= e($p['id']) ?>">
         <input type="hidden" name="delta" value="1">
-        <button class="btn btn-ghost btn-sm" type="submit" title="Move up the queue">↑</button>
+        <button class="btn btn-ghost btn-sm" type="submit" title="Move up the queue" aria-label="Move up the queue"><?= icon('arrow-up', 16) ?></button>
       </form>
       <form method="post">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="set_status">
         <input type="hidden" name="player" value="<?= e($p['id']) ?>">
         <input type="hidden" name="status" value="resting">
-        <button class="btn btn-ghost btn-sm" type="submit">Sit</button>
+        <button class="btn btn-ghost btn-sm" type="submit"><?= icon('pause', 15) ?>Sit</button>
       </form>
     </div>
   <?php endforeach; ?>
@@ -372,7 +374,7 @@ if ($resting): ?>
         <input type="hidden" name="action" value="set_status">
         <input type="hidden" name="player" value="<?= e($p['id']) ?>">
         <input type="hidden" name="status" value="ready">
-        <button class="btn btn-sm" type="submit">Back in</button>
+        <button class="btn btn-sm" type="submit"><?= icon('play', 15) ?>Back in</button>
       </form>
       <form method="post">
         <?= csrf_field() ?>
@@ -397,7 +399,7 @@ if ($resting): ?>
           <option value="<?= e($p['id']) ?>"><?= e($p['name']) ?> · <?= e(fmt_dupr((float) $p['dupr'])) ?></option>
         <?php endforeach; ?>
       </select>
-      <button class="btn btn-amber" type="submit" style="flex:0 0 auto">Add</button>
+      <button class="btn btn-amber" type="submit" style="flex:0 0 auto"><?= icon('user-plus', 17) ?>Add</button>
     </div>
     <p class="hint">A late arrival is credited with the current games floor, so the queue stays unblocked for everyone already playing.</p>
   </form>
@@ -435,20 +437,20 @@ if ($resting): ?>
       <p class="hint" style="margin-top:8px">Scan to open the board. Codes are drawn on this server — no internet needed.</p>
     </div>
 
-    <a class="btn btn-amber btn-block" href="courts.php">Print a code for each court</a>
+    <a class="btn btn-amber btn-block" href="courts.php"><?= icon('printer', 17) ?>Print a code for each court</a>
 
     <div class="btn-row" style="margin-top:8px">
       <form method="post"
             onsubmit="return confirm('Issue new codes? Every link and printed court card already handed out stops working.');">
         <?= csrf_field() ?><input type="hidden" name="action" value="board_rotate">
-        <button class="btn btn-ghost btn-block" type="submit">Issue new link</button></form>
+        <button class="btn btn-ghost btn-block" type="submit"><?= icon('rotate', 16) ?>Issue new link</button></form>
       <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="board_toggle">
         <button class="btn btn-danger btn-block" type="submit">Turn off</button></form>
     </div>
   <?php else: ?>
     <p>Publish a read-only board for players and spectators. Names are abbreviated by default.</p>
     <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="board_toggle">
-      <button class="btn btn-primary btn-block" type="submit">Turn on spectator board</button></form>
+      <button class="btn btn-primary btn-block" type="submit"><?= icon('eye', 17) ?>Turn on spectator board</button></form>
   <?php endif; ?>
 </div>
 
@@ -494,7 +496,7 @@ if ($resting): ?>
 <form method="post" onsubmit="return confirm('End the session? It is archived to History and the spectator board goes dark. Export your Reclub list first.');">
   <?= csrf_field() ?>
   <input type="hidden" name="action" value="end_session">
-  <button class="btn btn-danger btn-block" type="submit">End session</button>
+  <button class="btn btn-danger btn-block" type="submit"><?= icon('x', 17) ?>End session</button>
 </form>
 
 <?php page_foot(); ?>

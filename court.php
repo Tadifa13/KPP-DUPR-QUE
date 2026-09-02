@@ -70,7 +70,7 @@ page_head('Court ' . $court . ' — ' . $session['name'], [
     <div>
       <p class="eyebrow">Live court board</p>
       <h1 class="board-title" style="font-size:34px">Court <?= $court ?></h1>
-      <p class="tiny muted"><?= e($session['name']) ?> · updated <?= e(date('H:i', (int) $session['updated_at'])) ?></p>
+      <p class="tiny muted"><?= e($session['name']) ?> · updated <?= e(date('H:i', (int) ($session['updated_at'] / 1000))) ?></p>
     </div>
     <?= $stale ? chip('paused', 'warn') : '<span class="chip chip-good"><span class="live-dot"></span>live</span>' ?>
   </div>
@@ -130,11 +130,11 @@ page_head('Court ' . $court . ' — ' . $session['name'], [
 <?php endif; ?>
 
 <div class="btn-row" style="margin-top:18px">
-  <a class="btn btn-block" href="spectate.php?b=<?= e($token) ?>">All courts &amp; standings</a>
+  <a class="btn btn-block" href="spectate.php?b=<?= e($token) ?>"><?= icon('trophy', 17) ?>All courts &amp; standings</a>
 </div>
 
 <p class="center tiny muted" style="margin-top:16px">
-  View only · refreshes automatically
+  <?= icon('eye', 13) ?> View only · refreshes automatically
 </p>
 
 <?php page_foot(); ?>

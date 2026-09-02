@@ -81,9 +81,9 @@ $qs = $sessionId ? '&s=' . urlencode($sessionId) : '';
 
 <div class="card">
   <div class="btn-row">
-    <a class="btn btn-primary" href="reclub.php?download=csv<?= $qs ?>">Download CSV</a>
-    <a class="btn" href="reclub.php?download=txt<?= $qs ?>">Download list</a>
-    <a class="btn btn-ghost" href="reclub.php?download=json<?= $qs ?>">Full backup</a>
+    <a class="btn btn-primary" href="reclub.php?download=csv<?= $qs ?>"><?= icon('download', 17) ?>Download CSV</a>
+    <a class="btn" href="reclub.php?download=txt<?= $qs ?>"><?= icon('clipboard', 16) ?>Download list</a>
+    <a class="btn btn-ghost" href="reclub.php?download=json<?= $qs ?>"><?= icon('shield', 16) ?>Full backup</a>
   </div>
   <p class="hint">CSV columns match Reclub's import exactly. The JSON backup carries the whole session including frozen rating snapshots.</p>
 </div>

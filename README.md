@@ -234,6 +234,34 @@ time, which kills every link already handed out.
 
 ---
 
+## Design
+
+Dark by default — the app is used courtside at night, on a phone, by someone who
+is also refereeing. Legibility beats decoration wherever they compete.
+
+- **Type** is [Barlow Condensed](assets/fonts) for scores, court numbers and
+  headings, paired with Barlow for body text. Condensed athletic faces let a
+  score read from a metre away without eating the line. Self-hosted (SIL OFL) —
+  no font CDN, so it renders with no connection.
+- **Icons** are hand-drawn inline SVG in [`lib/icons.php`](lib/icons.php): one
+  24px grid, 1.75 stroke, round caps, `currentColor`. Icon packages all ship
+  over npm or a CDN, which this app cannot use. No emoji anywhere.
+- **The 3D court view** in [`assets/court3d.js`](assets/court3d.js) is a
+  hand-rolled perspective projection on Canvas 2D — rotate about X, divide by
+  depth, draw. It earns its place by being informational: court occupancy and
+  rally state readable at a glance from across the room. It is the *only*
+  animated element on the page.
+- **Motion** shares one easing token, `cubic-bezier(.16, 1, .3, 1)`. Press
+  feedback is scale-only so it never shifts layout. Entrance choreography is
+  applied by script, never in the markup, so a no-JS visitor sees fully
+  rendered content.
+- **`prefers-reduced-motion`** disables the ambient drift, the rally animation
+  and all entrance motion; the court view draws a single static frame.
+- Every text pair is checked against WCAG AA on the real composited surface,
+  not the token in isolation.
+
+---
+
 ## Layout
 
 ```
@@ -259,6 +287,9 @@ courts.php            printable QR sheet, one code per court
 court.php             public live view of a single court
 qr.php                QR image endpoint (SVG)
 lib/qr.php            QR encoder — pure PHP, no network
+lib/icons.php         inline SVG icon set
+assets/court3d.js     live 3D court view (Canvas, no library)
+assets/fonts/         self-hosted Barlow / Barlow Condensed (OFL)
 reclub.php            entry list and exports
 history.php           archived sessions
 spectate.php          public read-only board

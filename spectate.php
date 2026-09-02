@@ -81,6 +81,8 @@ page_head('Live board — ' . $session['name'], [
   <?php endif; ?>
 </div>
 
+<?= court3d($session, $onCourt) ?>
+
 <h2>Courts</h2>
 <div class="court-grid">
 <?php for ($court = 1; $court <= (int) $session['courts']; $court++):
@@ -159,7 +161,7 @@ if ($recent): ?>
 <?php endif; ?>
 
 <p class="center tiny muted" style="margin-top:22px">
-  View only · refreshes automatically · no admin controls behind this link
+  <?= icon('eye', 13) ?> View only · refreshes automatically · no admin controls behind this link
 </p>
 
 <?php page_foot(); ?>
