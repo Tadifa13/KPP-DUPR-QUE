@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KAMRYNNE QUE — Fair DUPR Social</title>
+<meta name="description" content="Fair queue management for DUPR pickleball socials. Runs entirely in your browser, offline.">
+<meta name="theme-color" content="#05100b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="KAMRYNNE QUE">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/brand/logo-96.png" sizes="96x96" type="image/png">
+<link rel="apple-touch-icon" href="assets/brand/logo-180.png">
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/BarlowCondensed-700.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/Barlow-400.woff2" crossorigin>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="#play">
+    <span class="brand-mark"><img src="assets/brand/logo-96.png" alt="" width="40" height="40"></span>
+    <span class="brand-text"><strong>KAMRYNNE QUE</strong><small>Fair DUPR Social</small></span>
+  </a>
+  <nav class="topbar-nav" id="topnav" aria-label="Sections"></nav>
+  <div class="topbar-right"><span class="who">This device</span></div>
+</header>
+<nav class="tabs" id="tabnav" aria-label="Sections"></nav>
+<div id="flash"></div>
+
+<main id="app"></main>
+
+<footer class="pagefoot">
+  <span class="foot-left">
+    <span class="foot-badge">
+      <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3.2 4.8 6v5.4c0 4.3 3 8 7.2 9.4 4.2-1.4 7.2-5.1 7.2-9.4V6z"/>
+        <path d="M9.2 12.2 11.3 14.3 15 10.6"/>
+      </svg>
+    </span>
+    <span>KAMRYNNE QUE · browser build · fair queue, frozen ratings</span>
+  </span>
+  <span class="foot-right">
+    <svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="5" y="10.5" width="14" height="10" rx="2"/>
+      <path d="M8.25 10.5V7.75a3.75 3.75 0 0 1 7.5 0v2.75"/>
+    </svg>
+    Stored on this device only
+  </span>
+</footer>
+
+<noscript>
+  <div class="flash flash-warn" style="margin:16px">
+    This build runs entirely in your browser and needs JavaScript. The server
+    build at the same repository works without it.
+  </div>
+</noscript>
+
+<script type="module" src="js/ui.js"></script>
+</body>
+</html>

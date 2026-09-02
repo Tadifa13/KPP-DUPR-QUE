@@ -1,0 +1,767 @@
+/* ===========================================================================
+   KAMRYNNE QUE — courtside at night
+   ---------------------------------------------------------------------------
+   Modern Dark (cinema): layered depth, ambient light, hairline glass edges,
+   accent glow on the one primary action per view.
+
+   Read one-handed beside court 1, in bad light, by someone who is also
+   refereeing. Legibility outranks decoration everywhere it competes.
+
+   Type: Barlow Condensed (athletic, condensed — scores, courts, headings)
+         paired with Barlow (body). Self-hosted; no font CDN.
+   =========================================================================== */
+
+/* ------------------------------------------------------------- fonts ---- */
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('fonts/BarlowCondensed-700.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('fonts/BarlowCondensed-600.woff2') format('woff2');
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow';
+  src: url('fonts/Barlow-600.woff2') format('woff2');
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow';
+  src: url('fonts/Barlow-500.woff2') format('woff2');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow';
+  src: url('fonts/Barlow-400.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+
+/* ------------------------------------------------------------ tokens ---- */
+:root {
+  /* Ground. Never pure black — it smears on OLED and kills the depth cues. */
+  --bg-deep:      #020806;
+  --bg-base:      #05100b;
+  --bg-elevated:  #0a1a13;
+
+  --gold:         #d9ad52;
+  --gold-soft:    #f0cf86;
+
+  --surface:      rgba(255, 255, 255, .045);
+  --surface-2:    rgba(255, 255, 255, .075);
+  --border:       rgba(255, 255, 255, .085);
+  --border-strong:rgba(255, 255, 255, .16);
+
+  --fg:           #e9f5ee;
+  --fg-muted:     #8fae9d;
+  --fg-dim:       #5e7d6b;
+
+  --primary:      #2ee89a;
+  --primary-deep: #0d7a52;
+  --on-primary:   #04120c;
+  --primary-glow: rgba(46, 232, 154, .30);
+
+  --accent:       #fcc63f;
+  --accent-deep:  #8a6413;
+  --on-accent:    #1a1204;
+  --accent-glow:  rgba(252, 198, 63, .26);
+
+  --danger:       #ff6b81;
+  --danger-dim:   rgba(255, 107, 129, .14);
+  --info:         #6cb6ff;
+
+  /* Radius, per the cinema-dark spec: 16 on cards, 11 on controls. */
+  --r:            16px;
+  --r-s:          11px;
+  --r-pill:       999px;
+
+  /* One easing for the whole product so every motion shares a rhythm. */
+  --ease:         cubic-bezier(.16, 1, .3, 1);
+  --ease-in:      cubic-bezier(.4, 0, 1, 1);
+  --t-fast:       140ms;
+  --t:            240ms;
+  --t-slow:       380ms;
+
+  --tap:          46px;
+
+  /* 4/8 spacing rhythm. */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px;
+  --s5: 24px; --s6: 32px; --s7: 48px;
+
+  --shadow-lift:  0 1px 0 rgba(255,255,255,.05) inset, 0 12px 32px -14px rgba(0,0,0,.9);
+  --z-nav: 40; --z-tabs: 30; --z-bar: 60; --z-modal: 80;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background:
+    radial-gradient(110% 60% at 50% -12%, #0c2c1c 0%, transparent 62%),
+    linear-gradient(180deg, var(--bg-base) 0%, var(--bg-deep) 76%, #010604 100%);
+  background-attachment: fixed;
+  color: var(--fg);
+  font-family: Barlow, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px; line-height: 1.55; font-weight: 400;
+  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Ambient light: two slow blobs, fixed and behind everything so they never
+   cost layout. Sized in vmin and anchored mostly off-screen so they light the corners
+   rather than tinting the content. On a phone a vmax-sized blob covers the
+   whole viewport and lifts the black level everywhere, which costs contrast
+   exactly where this app is hardest to read. */
+body::before, body::after {
+  content: ''; position: fixed; z-index: -1; pointer-events: none;
+  width: 46vmin; height: 46vmin; border-radius: 50%;
+  filter: blur(70px); opacity: .075;
+}
+body::before {
+  background: var(--primary); top: -20vmin; left: -16vmin;
+  animation: drift-a 26s var(--ease) infinite alternate;
+}
+body::after {
+  background: var(--accent); bottom: -22vmin; right: -18vmin;
+  animation: drift-b 32s var(--ease) infinite alternate;
+}
+@keyframes drift-a { to { transform: translate3d(8vmin, 6vmin, 0) scale(1.12); } }
+@keyframes drift-b { to { transform: translate3d(-7vmin, -5vmin, 0) scale(1.15); } }
+
+main { max-width: 1180px; margin: 0 auto; padding: var(--s5) var(--s4) var(--s7); }
+main.narrow { max-width: 720px; }
+main.wide { max-width: 1180px; }
+
+/* --------------------------------------------------------------- type --- */
+h1, h2, h3, .display, .court-no, .score-big, .stat .v, .dupr {
+  font-family: 'Barlow Condensed', 'Barlow Condensed Fallback', Barlow, sans-serif;
+}
+h1 { font-size: clamp(28px, 7vw, 38px); font-weight: 700; letter-spacing: -.01em; line-height: 1.05; margin: 0 0 var(--s1); text-wrap: balance; }
+h2 { font-size: 22px; font-weight: 700; letter-spacing: .01em; margin: var(--s6) 0 var(--s3); text-transform: uppercase; }
+h3 { font-size: 17px; font-weight: 600; margin: 0 0 var(--s1); }
+p  { margin: 0 0 var(--s3); color: var(--fg-muted); }
+a  { color: var(--primary); text-underline-offset: 3px; }
+strong { font-weight: 600; color: var(--fg); }
+
+.sub { color: var(--fg-muted); font-size: 14px; margin: 0 0 var(--s4); }
+.eyebrow {
+  font-family: Barlow, sans-serif;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--accent); margin: 0 0 var(--s2);
+  display: flex; align-items: center; gap: 7px;
+}
+.tiny { font-size: 12.5px; }
+.muted { color: var(--fg-muted); }
+.center { text-align: center; }
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* --------------------------------------------------------------- icon --- */
+.ico { flex: none; vertical-align: -.18em; }
+
+/* ------------------------------------------------------------- topbar --- */
+.topbar {
+  position: sticky; top: 0; z-index: var(--z-nav);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  padding-top: max(var(--s3), env(safe-area-inset-top));
+  background: rgba(4, 18, 12, .72);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; min-width: 0; }
+.brand-mark {
+  width: 36px; height: 36px; flex: none; border-radius: 11px;
+  display: grid; place-items: center;
+  background: linear-gradient(150deg, var(--primary), var(--primary-deep));
+  color: var(--on-primary);
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px;
+  box-shadow: 0 0 22px -4px var(--primary-glow);
+}
+.brand-text { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
+.brand-text strong { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; letter-spacing: .04em; text-transform: uppercase; }
+.brand-text small { font-size: 9.5px; color: var(--accent); letter-spacing: .18em; text-transform: uppercase; font-weight: 600; }
+.topbar-right { display: flex; align-items: center; gap: var(--s2); }
+.who { font-size: 12.5px; color: var(--fg-muted); }
+
+/* --------------------------------------------------------------- tabs --- */
+.tabs {
+  position: sticky; top: 61px; z-index: var(--z-tabs);
+  display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none;
+  padding: 0 var(--s2);
+  background: rgba(4, 18, 12, .66);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tabs a {
+  position: relative; flex: none;
+  display: flex; align-items: center; gap: 6px;
+  padding: 13px 13px; min-height: var(--tap);
+  font-size: 12.5px; font-weight: 600; letter-spacing: .04em;
+  color: var(--fg-dim); text-decoration: none; white-space: nowrap;
+  transition: color var(--t-fast) var(--ease);
+}
+.tabs a::after {
+  content: ''; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px;
+  background: var(--primary); border-radius: 2px 2px 0 0;
+  transform: scaleX(0); transform-origin: 50%;
+  transition: transform var(--t) var(--ease);
+}
+.tabs a.on { color: var(--primary); }
+.tabs a.on::after { transform: scaleX(1); }
+.tabs a:hover { color: var(--fg); }
+
+/* -------------------------------------------------------------- flash --- */
+.flash {
+  margin: var(--s3) var(--s4) 0; padding: 12px 14px; border-radius: var(--r-s);
+  font-size: 14px; border: 1px solid; display: flex; gap: 9px; align-items: flex-start;
+  animation: flash-in var(--t-slow) var(--ease) both;
+}
+@keyframes flash-in { from { opacity: 0; transform: translateY(-8px); } }
+.flash-ok   { background: rgba(46,232,154,.09);  border-color: rgba(46,232,154,.32);  color: #9df3cb; }
+.flash-warn { background: rgba(252,198,63,.09);  border-color: rgba(252,198,63,.32);  color: #fbe08f; }
+.flash-bad  { background: var(--danger-dim);     border-color: rgba(255,107,129,.34); color: #ffb9c4; }
+
+/* --------------------------------------------------------------- card --- */
+.card {
+  position: relative;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: var(--s4);
+  margin-bottom: var(--s3);
+  box-shadow: var(--shadow-lift);
+}
+.card.tight { padding: var(--s3); }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); margin-bottom: var(--s3); flex-wrap: wrap; }
+.card-title { font-size: 15px; font-weight: 600; margin: 0; }
+
+.court-card { transition: border-color var(--t) var(--ease), transform var(--t) var(--ease); }
+.court-card.live {
+  border-color: rgba(46,232,154,.42);
+  box-shadow: var(--shadow-lift), 0 0 0 1px rgba(46,232,154,.12), 0 0 40px -20px var(--primary-glow);
+}
+.court-card.pending { border-color: rgba(252,198,63,.42); }
+.court-card.empty { border-style: dashed; border-color: var(--border-strong); background: none; box-shadow: none; }
+
+.court-no {
+  font-size: 13px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--accent); display: flex; align-items: center; gap: 6px;
+}
+
+/* --------------------------------------------------------------- team --- */
+.matchup { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--s3); align-items: center; }
+.side { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.side.right { text-align: right; }
+.pname {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px; font-weight: 600; letter-spacing: .01em; line-height: 1.2;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.vs {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px; font-weight: 700; letter-spacing: .1em;
+  color: var(--fg-dim); padding: 0 2px;
+}
+.score-big { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+
+/* --------------------------------------------------------------- chip --- */
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase;
+  padding: 4px 9px; border-radius: var(--r-pill);
+  border: 1px solid transparent; white-space: nowrap; line-height: 1.4;
+}
+.chip-good    { background: rgba(46,232,154,.12);  color: #7cebbb; border-color: rgba(46,232,154,.3); }
+.chip-warn    { background: rgba(252,198,63,.12);  color: #f8d478; border-color: rgba(252,198,63,.3); }
+.chip-bad     { background: var(--danger-dim);     color: #ffa2b1; border-color: rgba(255,107,129,.3); }
+.chip-neutral { background: rgba(108,182,255,.11); color: #a3d0ff; border-color: rgba(108,182,255,.28); }
+.chip-muted   { background: var(--surface); color: var(--fg-muted); border-color: var(--border); }
+.chip-int     { background: rgba(108,182,255,.11); color: #a3d0ff; border-color: rgba(108,182,255,.28); }
+.chip-nov     { background: rgba(46,232,154,.1);   color: #7cebbb; border-color: rgba(46,232,154,.26); }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+
+/* ------------------------------------------------------------- button --- */
+.btn {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: var(--tap); padding: 0 var(--s4);
+  border-radius: var(--r-s); border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--fg);
+  font-family: Barlow, sans-serif; font-size: 14.5px; font-weight: 600; letter-spacing: .01em;
+  text-decoration: none; cursor: pointer;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  transition: transform var(--t-fast) var(--ease),
+              background-color var(--t-fast) var(--ease),
+              border-color var(--t-fast) var(--ease),
+              box-shadow var(--t-fast) var(--ease);
+}
+.btn:hover { background: rgba(255,255,255,.11); border-color: var(--border-strong); }
+/* Press feedback: scale only. Never changes layout bounds. */
+.btn:active { transform: scale(.97); }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .38; cursor: not-allowed; transform: none; }
+
+.btn-primary {
+  background: linear-gradient(150deg, var(--primary), var(--primary-deep));
+  color: var(--on-primary); border-color: transparent; font-weight: 700;
+  box-shadow: 0 0 26px -8px var(--primary-glow);
+}
+.btn-primary:hover { box-shadow: 0 0 34px -6px var(--primary-glow); background: linear-gradient(150deg, #46f2a8, #108a5c); }
+.btn-amber {
+  background: linear-gradient(150deg, var(--accent), var(--accent-deep));
+  color: var(--on-accent); border-color: transparent; font-weight: 700;
+  box-shadow: 0 0 26px -8px var(--accent-glow);
+}
+.btn-danger { background: var(--danger-dim); border-color: rgba(255,107,129,.34); color: #ffa2b1; }
+.btn-ghost  { background: transparent; }
+.btn-sm { min-height: 36px; padding: 0 12px; font-size: 12.5px; gap: 5px; }
+.btn-block { width: 100%; }
+.btn-row { display: flex; gap: var(--s2); flex-wrap: wrap; }
+.btn-row > * { flex: 1 1 auto; }
+.btn-row form { display: flex; }
+.btn-row form .btn { width: 100%; }
+
+/* --------------------------------------------------------------- form --- */
+label { display: block; font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--fg-muted); margin: 0 0 6px; text-transform: uppercase; }
+/* Form controls carry a stronger edge than decorative card borders — a
+   hairline that reads as a tasteful seam on a card reads as "no field here"
+   on an input, especially in the low light these get used in. */
+input[type=text], input[type=password], input[type=number], input[type=search], select, textarea {
+  width: 100%; min-height: var(--tap); padding: 11px 13px;
+  background: rgba(0, 0, 0, .34); color: var(--fg);
+  border: 1px solid rgba(255, 255, 255, .22); border-radius: var(--r-s);
+  font-family: Barlow, sans-serif; font-size: 16px;
+  transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+}
+input:hover, select:hover, textarea:hover { border-color: rgba(255, 255, 255, .34); }
+label { color: var(--fg-muted); }
+textarea { min-height: 130px; resize: vertical; line-height: 1.55; }
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(46,232,154,.16);
+}
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.field { margin-bottom: var(--s3); }
+.field-row { display: flex; gap: var(--s3); }
+.field-row > * { flex: 1; }
+.hint { font-size: 12px; color: var(--fg-dim); margin-top: 6px; line-height: 1.5; }
+fieldset { border: 0; padding: 0; margin: 0; }
+
+/* Score inputs read from a metre away. */
+.score-input input { font-family: 'Barlow Condensed', sans-serif; font-size: 30px; font-weight: 700; text-align: center; min-height: 64px; padding: 0; }
+
+/* -------------------------------------------------------------- table --- */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 calc(var(--s4) * -1); padding: 0 var(--s4); }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+th {
+  text-align: left; font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--fg-dim); font-weight: 600; padding: 0 10px 9px 0;
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+td { padding: 11px 10px 11px 0; border-bottom: 1px solid rgba(255,255,255,.05); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 12px; }
+.rank {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 700;
+  color: var(--fg-dim); width: 30px;
+}
+tbody tr:nth-child(1) .rank { color: var(--accent); }
+
+/* ------------------------------------------------------------ players --- */
+.plist { display: flex; flex-direction: column; gap: 7px; }
+.prow {
+  display: flex; align-items: center; gap: var(--s3);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-s); padding: 10px 12px;
+  transition: border-color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease);
+}
+.prow:hover { border-color: var(--border-strong); background: var(--surface-2); }
+.prow.is-resting { opacity: .55; }
+.prow.is-done { opacity: .36; }
+.prow .grow { flex: 1; min-width: 0; }
+.prow .nm { font-size: 15.5px; font-weight: 600; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.prow .meta { font-size: 12px; color: var(--fg-dim); }
+.dupr { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent); }
+
+/* --------------------------------------------------------------- misc --- */
+.empty {
+  text-align: center; padding: var(--s6) var(--s4); color: var(--fg-muted);
+  border: 1px dashed var(--border-strong); border-radius: var(--r); font-size: 14px;
+}
+.reason {
+  font-size: 12px; color: var(--fg-dim); line-height: 1.55;
+  border-left: 2px solid var(--border-strong); padding-left: 10px; margin-top: var(--s3);
+}
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); gap: var(--s2); }
+.stat {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-s); padding: 11px 12px;
+}
+.stat .k { font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--fg-dim); font-weight: 600; }
+.stat .v { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; margin-top: 2px; }
+.divider { height: 1px; background: var(--border); margin: var(--s5) 0; border: 0; }
+.split { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+
+.pagefoot {
+  max-width: 1180px; margin: 0 auto;
+  padding: var(--s5) var(--s4) var(--s6);
+  border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--fg-dim);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s3); flex-wrap: wrap;
+}
+.pagefoot .foot-left { display: flex; align-items: center; gap: 10px; }
+.pagefoot .foot-badge {
+  width: 34px; height: 34px; border-radius: 10px; flex: none;
+  display: grid; place-items: center;
+  border: 1px solid var(--border); background: var(--surface); color: var(--primary);
+}
+.pagefoot .foot-right { display: flex; align-items: center; gap: 6px; }
+
+.live-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--primary); box-shadow: 0 0 8px var(--primary);
+  animation: pulse 2.2s var(--ease) infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.8); } }
+
+/* --------------------------------------------------- 3D court canvas ---- */
+.court3d {
+  position: relative; width: 100%; aspect-ratio: 16 / 9;
+  border-radius: var(--r); overflow: hidden;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #0a2818, #05150e);
+  margin-bottom: var(--s3);
+}
+.court3d canvas { display: block; width: 100%; height: 100%; }
+.court3d-empty {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  color: var(--fg-dim); font-size: 13px;
+}
+
+/* ------------------------------------------------------ entrance motion -- */
+/* Applied by motion.js only when motion is allowed, so no-JS and
+   reduced-motion users always see fully rendered content. */
+.reveal { opacity: 0; transform: translateY(14px); }
+.reveal.in {
+  opacity: 1; transform: none;
+  transition: opacity var(--t-slow) var(--ease), transform var(--t-slow) var(--ease);
+}
+
+/* ------------------------------------------------------ offline state --- */
+[data-offline-state="active"] { color: var(--primary) !important; }
+[data-offline-state="insecure"],
+[data-offline-state="failed"],
+[data-offline-state="unsupported"] { color: var(--accent) !important; }
+
+.netbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-bar);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: linear-gradient(180deg, #6b4a10, #4a330a);
+  color: #ffe9b0; font-size: 13px; font-weight: 600; text-align: center;
+  padding: 11px var(--s4) calc(11px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--accent);
+  animation: bar-up var(--t-slow) var(--ease) both;
+}
+@keyframes bar-up { from { transform: translateY(100%); } }
+
+/* -------------------------------------------------------- court codes --- */
+.qr-sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--s3); }
+.qr-card {
+  background: #fff; color: #0b0b0b; border: 1px solid #c9d2cc;
+  border-radius: var(--r); padding: var(--s4) var(--s3); text-align: center;
+  break-inside: avoid; page-break-inside: avoid;
+}
+.qr-kicker { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #5b6b62; margin: 0 0 4px; font-weight: 600; }
+.qr-title { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; margin: 0 0 var(--s3); color: #0b0b0b; text-transform: uppercase; }
+.qr-title.qr-court { font-size: 32px; }
+.qr-img { display: block; width: 100%; max-width: 190px; height: auto; margin: 0 auto; }
+.qr-caption { font-size: 12px; color: #3f4a44; margin: var(--s3) 0 0; }
+.qr-url { font-family: ui-monospace, Menlo, monospace; font-size: 8.5px; color: #7b8983; margin: 6px 0 0; word-break: break-all; line-height: 1.35; }
+
+/* ---------------------------------------------------------- spectator --- */
+body.bare main { max-width: 900px; padding-top: var(--s5); }
+.board-head {
+  border: 1px solid rgba(252,198,63,.3); border-radius: var(--r);
+  padding: var(--s4); margin-bottom: var(--s4);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  box-shadow: var(--shadow-lift);
+}
+.board-title { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(26px, 7vw, 34px); font-weight: 700; margin: 2px 0 3px; text-transform: uppercase; letter-spacing: .01em; }
+.court-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: var(--s3); }
+
+/* ------------------------------------------------------------- layout --- */
+@media (min-width: 640px) {
+  main { padding: var(--s5) var(--s5) var(--s7); }
+  .pname { font-size: 22px; }
+}
+
+@media print {
+  body { background: #fff !important; color: #000; }
+  body::before, body::after { display: none !important; }
+  .topbar, .tabs, .pagefoot, .flash, .noprint, .netbar, .court3d { display: none !important; }
+  main { max-width: none; padding: 0; }
+  .qr-sheet { grid-template-columns: repeat(2, 1fr); gap: 10mm; }
+  .qr-card { border: 1px dashed #999; }
+  @page { margin: 12mm; }
+}
+
+/* Reduced motion: kill ambience and choreography, keep state feedback. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  body::before, body::after { animation: none !important; }
+  .reveal { opacity: 1 !important; transform: none !important; }
+}
+
+/* ===========================================================================
+   Dashboard surface
+   =========================================================================== */
+
+/* Brand mark: the gold monogram sits on its own black coin, which is how the
+   logo is drawn. Against the dark green ground it reads as an inlay rather
+   than a pasted-on square. */
+.brand-mark {
+  width: 40px; height: 40px; padding: 0; overflow: hidden;
+  background: #000; border: 1px solid rgba(217, 173, 82, .38);
+  box-shadow: 0 0 20px -6px rgba(217, 173, 82, .34);
+}
+.brand-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.brand-text small { color: var(--gold); }
+
+/* Inline navigation in the top bar on wide screens; the scrolling tab strip
+   underneath is kept for phones. */
+.topbar { gap: var(--s5); }
+.topbar-nav { display: none; }
+.topbar-nav a {
+  position: relative; display: inline-flex; align-items: center; gap: 7px;
+  padding: 0 4px; height: 62px; min-height: var(--tap);
+  font-size: 14px; font-weight: 500; color: var(--fg-muted);
+  text-decoration: none; white-space: nowrap;
+  transition: color var(--t-fast) var(--ease);
+}
+.topbar-nav a::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+  background: var(--primary); border-radius: 2px 2px 0 0;
+  transform: scaleX(0); transition: transform var(--t) var(--ease);
+}
+.topbar-nav a.on { color: var(--primary); font-weight: 600; }
+.topbar-nav a.on::after { transform: scaleX(1); }
+.topbar-nav a:hover { color: var(--fg); }
+
+/* ------------------------------------------------------------- hero ----- */
+.hero {
+  display: grid; grid-template-columns: 1fr; gap: var(--s5);
+  align-items: center;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border); border-radius: var(--r);
+  padding: var(--s5); margin-bottom: var(--s4);
+  box-shadow: var(--shadow-lift);
+  overflow: hidden;
+}
+.hero-art { display: none; }
+.hero-art img { width: 100%; height: auto; display: block; opacity: .9; }
+.hero-body h1 { margin-bottom: var(--s2); }
+.hero-body > p { max-width: 56ch; }
+
+/* Callout inside the hero — the single next action. */
+.callout {
+  display: flex; align-items: center; gap: var(--s4);
+  border: 1px solid var(--border); border-radius: var(--r-s);
+  background: rgba(0, 0, 0, .22); padding: var(--s4); margin-top: var(--s4);
+  flex-wrap: wrap;
+}
+.callout-ring {
+  width: 56px; height: 56px; border-radius: 50%; flex: none;
+  display: grid; place-items: center;
+  border: 1px solid rgba(46, 232, 154, .4); color: var(--primary);
+  background: rgba(46, 232, 154, .07);
+}
+.callout-body { flex: 1 1 260px; min-width: 0; }
+
+/* ------------------------------------------------------- stat cards ----- */
+.statgrid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--s3); margin-bottom: var(--s4);
+}
+.statcard {
+  display: flex; align-items: center; gap: var(--s3);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border); border-radius: var(--r);
+  padding: var(--s4); box-shadow: var(--shadow-lift);
+}
+.statcard-ring {
+  width: 46px; height: 46px; border-radius: 50%; flex: none;
+  display: grid; place-items: center;
+  border: 1px solid var(--border-strong); background: rgba(0, 0, 0, .28);
+  color: var(--fg-muted);
+}
+.statcard .v {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 30px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.statcard .k { font-size: 13px; font-weight: 600; margin-top: 3px; }
+.statcard .sub { font-size: 11.5px; color: var(--fg-dim); margin: 1px 0 0; }
+
+/* ----------------------------------------------------------- panels ----- */
+.dash { display: grid; grid-template-columns: 1fr; gap: var(--s3); align-items: start; }
+.panel {
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border); border-radius: var(--r);
+  box-shadow: var(--shadow-lift); overflow: hidden;
+}
+.panel-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: var(--s4) var(--s4) 0;
+  font-size: 12px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+  color: var(--primary);
+}
+.panel-body { padding: var(--s3) var(--s4) var(--s4); }
+.panel-note { font-size: 12.5px; color: var(--fg-dim); margin: 6px 0 var(--s3); }
+.panel-foot {
+  border-top: 1px solid var(--border); padding: 13px var(--s4);
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 13px; font-weight: 600; color: var(--fg-muted); text-decoration: none;
+  transition: color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease);
+}
+a.panel-foot:hover { color: var(--primary); background: rgba(255, 255, 255, .03); }
+
+/* Court list rows with a colour dot, as on the board. */
+.courtlist { display: flex; flex-direction: column; }
+.courtrow {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 0; border-bottom: 1px solid rgba(255, 255, 255, .04);
+  font-size: 14.5px;
+}
+.courtrow:last-child { border-bottom: 0; }
+.courtrow .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.courtrow .nm { flex: 1; font-weight: 500; }
+.courtrow .st { font-size: 13px; color: var(--fg-muted); }
+.courtrow.is-live .st { color: var(--primary); font-weight: 600; }
+.courtrow.is-pending .st { color: var(--accent); font-weight: 600; }
+
+/* Rules checklist. */
+.rules { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.rules li { display: flex; gap: 9px; align-items: flex-start; font-size: 13.5px; color: var(--fg-muted); }
+.rules .ico { color: var(--primary); margin-top: 2px; }
+
+/* Empty states with a ringed glyph, matching the dashboard language. */
+.emptystate { text-align: center; padding: var(--s6) var(--s3); }
+.emptystate-ring {
+  width: 58px; height: 58px; border-radius: 50%; margin: 0 auto var(--s3);
+  display: grid; place-items: center;
+  border: 1px solid var(--border-strong); background: rgba(0, 0, 0, .25);
+  color: var(--fg-dim);
+}
+.emptystate .t { font-size: 15px; font-weight: 600; color: var(--fg); }
+.emptystate .d { font-size: 12.5px; color: var(--fg-dim); margin-top: 4px; }
+
+/* Skeleton rows stand in for a table that has no data yet, so the shape of
+   what is coming is legible before anything is played. */
+.skel-row { display: flex; align-items: center; gap: var(--s4); padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+.skel { background: rgba(255, 255, 255, .055); border-radius: 6px; height: 11px; }
+.skel.dot { width: 18px; height: 18px; border-radius: 50%; flex: none; }
+.skel.wide { flex: 1; max-width: 190px; }
+.skel.cell { width: 54px; }
+
+@media (min-width: 900px) {
+  .tabs { display: none; }
+  .topbar-nav { display: flex; align-items: center; gap: var(--s5); flex: 1; }
+  .topbar { padding-top: 0; padding-bottom: 0; min-height: 62px; }
+  .hero { grid-template-columns: minmax(240px, 340px) 1fr; gap: var(--s6); padding: var(--s5) var(--s6); }
+  .hero-art { display: block; }
+  .dash { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ===========================================================================
+   Podium and medal ranks
+   =========================================================================== */
+:root {
+  --medal-1: #d9ad52;   /* gold, matching the monogram */
+  --medal-2: #c3cbd2;   /* silver */
+  --medal-3: #cd7f4a;   /* bronze */
+}
+
+/* Second, first, third — read left to right as an actual podium. The order is
+   set in the markup so it also reads 1st, 2nd, 3rd to a screen reader. */
+.podium {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: var(--s3); align-items: end; margin-bottom: var(--s4);
+}
+.pod {
+  position: relative; text-align: center;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border); border-radius: var(--r);
+  padding: var(--s4) var(--s2) var(--s3);
+  box-shadow: var(--shadow-lift);
+}
+.pod-1 { order: 2; border-color: color-mix(in srgb, var(--medal-1) 46%, transparent); }
+.pod-2 { order: 1; border-color: color-mix(in srgb, var(--medal-2) 32%, transparent); }
+.pod-3 { order: 3; border-color: color-mix(in srgb, var(--medal-3) 32%, transparent); }
+.pod-1 { padding-top: var(--s5); box-shadow: var(--shadow-lift), 0 0 44px -22px var(--medal-1); }
+
+.pod-medal {
+  width: 42px; height: 42px; border-radius: 50%; margin: 0 auto var(--s2);
+  display: grid; place-items: center;
+  font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700;
+  letter-spacing: .02em; color: #16130a;
+}
+.pod-1 .pod-medal { background: linear-gradient(150deg, #f0cf86, var(--medal-1)); width: 50px; height: 50px; font-size: 17px; }
+.pod-2 .pod-medal { background: linear-gradient(150deg, #e4eaef, var(--medal-2)); }
+.pod-3 .pod-medal { background: linear-gradient(150deg, #e6a877, var(--medal-3)); }
+
+.pod-name {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 19px; font-weight: 700;
+  line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pod-1 .pod-name { font-size: 23px; }
+.pod-line { font-size: 12px; color: var(--fg-muted); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.pod-diff { font-size: 11.5px; color: var(--fg-dim); margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+/* Ordinal rank in the table. Colour marks the top three, but the ordinal
+   itself carries the meaning so it never depends on colour alone. */
+.rank-o {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.rank-o.m1 { color: var(--medal-1); }
+.rank-o.m2 { color: var(--medal-2); }
+.rank-o.m3 { color: var(--medal-3); }
+
+/* ---------------------------------------------------------- match log --- */
+.log-table td { vertical-align: middle; }
+.log-game {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 700;
+  color: var(--fg-muted); font-variant-numeric: tabular-nums;
+}
+.log-court { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.log-court .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.log-side { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.log-side .p { font-size: 14px; line-height: 1.35; }
+.log-side.win .p { font-weight: 600; color: var(--fg); }
+.log-side.lose .p { color: var(--fg-muted); }
+.log-score {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.log-score .w { color: var(--primary); }
+.log-score .l { color: var(--fg-dim); }
+.log-score .sep { color: var(--fg-dim); margin: 0 3px; font-size: 17px; }
+
+@media (max-width: 640px) {
+  .podium { grid-template-columns: 1fr; align-items: stretch; }
+  .pod-1, .pod-2, .pod-3 { order: 0; padding-top: var(--s4); }
+  .pod { display: flex; align-items: center; gap: var(--s3); text-align: left; }
+  .pod-medal { margin: 0; }
+  .pod-1 .pod-medal { width: 42px; height: 42px; font-size: 15px; }
+  .pod-1 .pod-name { font-size: 19px; }
+}

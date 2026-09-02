@@ -27,11 +27,46 @@ survives.
 
 ---
 
-## Running it
+## Two ways to run it
+
+**1. In the browser, nothing to install.** Open the published page, and it runs:
+
+**https://tadifa13.github.io/KPP-DUPR-QUE/**
+
+Add it to your home screen and it works offline from then on — no server, no
+Termux, no laptop. Data lives in that browser on that device.
+
+**2. As a server**, when several devices need to share one session — the
+spectator board, court QR codes and a database that outlives one browser.
 
 ```bash
 ./serve.sh
 ```
+
+Or double-click a launcher in [`launch/`](launch): `START-WINDOWS.bat`,
+`START-MAC.command`, or `start-linux.sh`. Each checks PHP is present, starts the
+app and opens your browser.
+
+### Which one
+
+| | Browser build | Server build |
+|---|---|---|
+| Setup | none — open a link | PHP on one machine |
+| Works offline | yes, after first visit | yes, on the LAN |
+| Installs as an app | yes, on every device | needs `--https` |
+| Data lives | in that one browser | in SQLite, shared |
+| Spectator board & court QR codes | no | yes |
+| Several organizers at once | no | yes |
+
+Both run the **same matchmaking and rating maths**. The browser engine in
+[`docs/js/engine.js`](docs/js/engine.js) is a port of the PHP one, and the two
+are cross-checked field by field against identical inputs — 40 scenarios, 992
+compared values, exact agreement. Change a weight in one and you must change it
+in the other.
+
+---
+
+## Running the server build
 
 Open <http://localhost:8080> and the first run walks you through creating the
 club and an organizer account. The SQLite file is created automatically at
