@@ -67,10 +67,17 @@ backup file** is the only thing standing between you and a cleared cache — tak
 one after a session.
 
 Both run the **same matchmaking and rating maths**. The browser engine in
-[`docs/js/engine.js`](docs/js/engine.js) is a port of the PHP one, and the two
-are cross-checked field by field against identical inputs — 40 scenarios, 992
-compared values, exact agreement. Change a weight in one and you must change it
-in the other.
+[`docs/js/engine.js`](docs/js/engine.js) is a port of the PHP one, and
+[`tests/cross-check.sh`](tests/cross-check.sh) is what stops them drifting: it
+compares all 23 shared constants exactly, then runs 40 generated scenarios
+through both engines and compares 992 fields — match selection, pairing,
+quality, bracket, gainIndex, standings order and walk-in credit.
+
+Both halves earn their place. The scenarios caught `phpRound` disagreeing with
+PHP on 3 of 40 cases. The constants check caught a weight the scenarios missed
+entirely: changing `W_BACK_TO_BACK` in one engine left all 992 fields identical,
+because `W_PLAYERS_AT_FLOOR` dominates the objective and that term never decided
+an outcome. CI runs both on every push.
 
 ---
 
@@ -136,6 +143,7 @@ retires the old cache.
 
 ```bash
 php tests/run.php && php tests/smoke.php && php tests/qr_test.php
+./tests/cross-check.sh
 ```
 
 189 assertions. `run.php` covers the engine as pure functions (62). `smoke.php`

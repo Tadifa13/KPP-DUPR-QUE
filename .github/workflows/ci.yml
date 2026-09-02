@@ -1,0 +1,56 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_sqlite, sqlite3, openssl, pcntl, mbstring
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Lint every PHP file
+        run: |
+          fail=0
+          while IFS= read -r f; do
+            php -l "$f" >/dev/null || fail=1
+          done < <(find . -name '*.php' -not -path './data/*')
+          exit $fail
+
+      - name: Lint JavaScript
+        run: |
+          node --check assets/app.js
+          node --check assets/court3d.js
+          node --check sw.js
+          node --check docs/sw.js
+          for f in docs/js/*.js; do
+            node --input-type=module --eval "$(sed 's|^import .*||;s|^export ||' "$f")" \
+              2>&1 | grep -q SyntaxError && { echo "SyntaxError in $f"; exit 1; }
+          done
+          echo "javascript ok"
+
+      - name: Engine unit tests
+        run: php tests/run.php
+
+      - name: End-to-end against a real database
+        run: php tests/smoke.php
+
+      - name: QR encoder
+        run: php tests/qr_test.php
+
+      # The two engines are separate implementations of one algorithm. This is
+      # what stops them drifting apart unnoticed.
+      - name: PHP / browser engine cross-check
+        run: ./tests/cross-check.sh
