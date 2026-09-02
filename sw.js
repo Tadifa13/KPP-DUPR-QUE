@@ -14,7 +14,7 @@
  *                   is told to retry rather than being shown a fake result.
  */
 
-const VERSION = 'que-v1.1.0';
+const VERSION = 'que-v1.2.0';
 const SHELL = [
   './offline.html',
   './assets/app.css',

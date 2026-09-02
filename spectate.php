@@ -118,16 +118,21 @@ page_head('Live board — ' . $session['name'], [
 
 <?php if ($snap['standings']): ?>
   <h2>Standings</h2>
+  <?php
+  // Privacy applies here too, so the podium is built from displayed names.
+  $podRows = array_map(fn($r) => ['name' => $show($r['id'])] + $r, $snap['standings']);
+  ?>
+  <?= podium($podRows) ?>
   <div class="card">
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th class="rank">#</th><th>Player</th><th class="num">W</th><th class="num">L</th><th class="num">Diff</th></tr>
+          <tr><th class="rank">Place</th><th>Player</th><th class="num">W</th><th class="num">L</th><th class="num">Diff</th></tr>
         </thead>
         <tbody>
         <?php foreach ($snap['standings'] as $i => $r): ?>
           <tr>
-            <td class="rank"><?= $i + 1 ?></td>
+            <td class="rank"><?= rank_cell($i + 1) ?></td>
             <td><strong><?= e($show($r['id'])) ?></strong></td>
             <td class="num"><?= (int) $r['w'] ?></td>
             <td class="num"><?= (int) $r['l'] ?></td>

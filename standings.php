@@ -107,12 +107,13 @@ foreach ($snap['roster'] as $p) {
 <?php if (!$standings): ?>
   <div class="empty">No completed games yet.</div>
 <?php else: ?>
+  <?= podium($standings) ?>
   <div class="card">
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th class="rank">#</th>
+            <th class="rank">Place</th>
             <th>Player</th>
             <th class="num">W</th>
             <th class="num">L</th>
@@ -123,7 +124,7 @@ foreach ($snap['roster'] as $p) {
         <tbody>
         <?php foreach ($standings as $i => $r): ?>
           <tr>
-            <td class="rank"><?= $i + 1 ?></td>
+            <td class="rank"><?= rank_cell($i + 1) ?></td>
             <td><strong><?= e($r['name']) ?></strong></td>
             <td class="num"><?= (int) $r['w'] ?></td>
             <td class="num"><?= (int) $r['l'] ?></td>

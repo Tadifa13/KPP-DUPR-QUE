@@ -172,6 +172,48 @@ function court_colour(int $court): string
     return $wheel[($court - 1) % count($wheel)];
 }
 
+/**
+ * Podium for the top three. Rendered 2-1-3 visually via CSS order, but written
+ * 1-2-3 in the markup so screen readers and no-CSS output read in rank order.
+ */
+function podium(array $standings): string
+{
+    $top = array_slice($standings, 0, 3);
+    if (count($top) < 3) {
+        return '';                       // a podium with gaps is just a list
+    }
+    $out = '<div class="podium">';
+    foreach ($top as $i => $r) {
+        $place = $i + 1;
+        $diff = (int) $r['pf'] - (int) $r['pa'];
+        $out .= '<div class="pod pod-' . $place . '">'
+            . '<div class="pod-medal">' . e(ordinal($place)) . '</div>'
+            . '<div style="min-width:0">'
+            . '<div class="pod-name">' . e($r['name']) . '</div>'
+            . '<div class="pod-line">' . (int) $r['w'] . 'W · ' . (int) $r['l'] . 'L</div>'
+            . '<div class="pod-diff">' . ($diff > 0 ? '+' : '') . $diff . ' diff</div>'
+            . '</div></div>';
+    }
+    return $out . '</div>';
+}
+
+/** Ordinal rank cell. The ordinal carries the meaning; colour only echoes it. */
+function rank_cell(int $place): string
+{
+    $cls = $place <= 3 ? ' m' . $place : '';
+    return '<span class="rank-o' . $cls . '">' . e(ordinal($place)) . '</span>';
+}
+
+/** One side of a match in the log, marked won or lost. */
+function log_side(array $ids, array $names, bool $won): string
+{
+    $out = '<div class="log-side ' . ($won ? 'win' : 'lose') . '">';
+    foreach ($ids as $id) {
+        $out .= '<span class="p">' . e($names[$id] ?? 'Player') . '</span>';
+    }
+    return $out . '</div>';
+}
+
 /** gainIndex chip — positive means outperforming their DUPR. */
 function gain_chip(float $gain, int $evidence): string
 {

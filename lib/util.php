@@ -95,6 +95,19 @@ function board_url(string $token): string
     return $scheme . '://' . $host . $dir . '/spectate.php?b=' . urlencode($token);
 }
 
+/**
+ * English ordinal: 1 -> 1st, 2 -> 2nd, 3 -> 3rd, 11 -> 11th.
+ * Handles the 11/12/13 exception that a naive last-digit rule gets wrong.
+ */
+function ordinal(int $n): string
+{
+    $abs = abs($n) % 100;
+    if ($abs >= 11 && $abs <= 13) {
+        return $n . 'th';
+    }
+    return $n . ['th', 'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th'][abs($n) % 10];
+}
+
 /** Format a DUPR rating for display. */
 function fmt_dupr(float $v): string
 {
