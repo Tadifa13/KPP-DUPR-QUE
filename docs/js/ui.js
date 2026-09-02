@@ -234,7 +234,8 @@ function viewPlay() {
         <button class="btn btn-ghost btn-sm" data-act="courts-plus"
                 ${s.courts >= E.CFG.MAX_COURTS ? 'disabled' : ''} aria-label="One court more">${icon('plus', 16)}</button>
       </div>
-    </div>`;
+    </div>
+    <div class="courts-grid">`;
 
   for (let c = 1; c <= s.courts; c++) {
     const m = onCourt[c];
@@ -291,7 +292,8 @@ function viewPlay() {
     </div>`;
   }
 
-  html += `<h2>Queue <span class="muted tiny">· ${ready.length} ready</span></h2>`;
+  html += `</div>
+    <h2>Queue <span class="muted tiny">· ${ready.length} ready</span></h2>`;
   html += ready.length ? `<div class="plist">${ready.map((p) => {
     const g = games[p.id] || 0;
     const eff = E.effectiveRating(Number(p.dupr), Number(p.adjustment) || 0);

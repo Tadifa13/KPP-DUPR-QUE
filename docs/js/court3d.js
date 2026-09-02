@@ -36,6 +36,37 @@ export function mountCourt3d(host, courts) {
   const totalW = n * CW + (n - 1) * GAP;
   const cam = { pitch: 0.92, dist: 74, focal: 0 };
   let W = 0, H = 0;
+  // Camera fit, recomputed on resize: solved from the scene rather than
+  // guessed, so any number of courts fills the canvas without spilling off it.
+  // A fixed focal length made one court tiny and sliced four courts in half.
+  let fitFocal = 900, originY = 0;
+
+  function fitCamera() {
+    const cy = Math.cos(cam.pitch), sy = Math.sin(cam.pitch);
+    let maxAbsX = 0, minY = Infinity, maxY = -Infinity;
+
+    for (let i = 0; i < n; i++) {
+      const x0 = -totalW / 2 + i * (CW + GAP);
+      const xs = [x0, x0 + CW];
+      const zs = [-CL / 2, CL / 2];
+      // y = 0 is the surface; -6 clears the net and the court number above it.
+      const ys = [0, -6];
+      for (const x of xs) for (const z of zs) for (const y of ys) {
+        const yr = y * cy - z * sy;
+        const zr = y * sy + z * cy;
+        const inv = 1 / (zr + cam.dist);
+        maxAbsX = Math.max(maxAbsX, Math.abs(x * inv));
+        minY = Math.min(minY, yr * inv);
+        maxY = Math.max(maxY, yr * inv);
+      }
+    }
+
+    const byWidth = maxAbsX > 0 ? (W * 0.46) / maxAbsX : 900;
+    const spanY = maxY - minY;
+    const byHeight = spanY > 0 ? (H * 0.86) / spanY : 900;
+    fitFocal = Math.max(60, Math.min(byWidth, byHeight));
+    originY = H / 2 - ((minY + maxY) / 2) * fitFocal;
+  }
 
   function resize() {
     const rect = host.getBoundingClientRect();
@@ -45,7 +76,7 @@ export function mountCourt3d(host, courts) {
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    cam.focal = Math.max(W, 420) * 0.92;
+    fitCamera();
     return true;
   }
 
@@ -53,8 +84,8 @@ export function mountCourt3d(host, courts) {
     const cy = Math.cos(cam.pitch), sy = Math.sin(cam.pitch);
     const yr = y * cy - z * sy;
     const zr = y * sy + z * cy;
-    const d = cam.focal / (zr + cam.dist);
-    return { x: W / 2 + x * d, y: H * 0.6 + yr * d, s: d };
+    const d = fitFocal / (zr + cam.dist);
+    return { x: W / 2 + x * d, y: originY + yr * d, s: d };
   };
 
   const poly = (pts, fill, stroke, width) => {
@@ -137,7 +168,7 @@ export function mountCourt3d(host, courts) {
 
   function frame(t) {
     ctx.clearRect(0, 0, W, H);
-    if (!reduced) cam.pitch = 0.92 + Math.sin(t / 9000) * 0.045;
+    if (!reduced) { cam.pitch = 0.92 + Math.sin(t / 9000) * 0.045; fitCamera(); }
     courts.forEach((c, i) => drawCourt(c, i, t));
   }
 

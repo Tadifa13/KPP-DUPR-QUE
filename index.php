@@ -311,6 +311,7 @@ page_head('Play', ['nav' => true, 'active' => 'play']);
 <?= court3d($session, $onCourt) ?>
 
 <h2>Courts</h2>
+<div class="courts-grid">
 <?php for ($court = 1; $court <= (int) $session['courts']; $court++):
     $m = $onCourt[$court] ?? null; ?>
 
@@ -398,6 +399,7 @@ page_head('Play', ['nav' => true, 'active' => 'play']);
     </div>
   <?php endif; ?>
 <?php endfor; ?>
+</div>
 
 <h2>Queue <span class="muted tiny">· <?= count($ready) ?> ready</span></h2>
 <?php if (!$ready): ?>

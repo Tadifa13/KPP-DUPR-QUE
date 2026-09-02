@@ -54,6 +54,35 @@
   var cam = { pitch: 0.92, dist: 74, focal: 0, yaw: 0 };
 
   var W = 0, H = 0, dpr = 1;
+  // Camera fit, solved from the scene instead of guessed. A fixed focal length
+  // made a single court tiny and sliced four courts off the canvas edges.
+  var fitFocal = 900, originY = 0;
+
+  function fitCamera() {
+    var cy = Math.cos(cam.pitch), sy = Math.sin(cam.pitch);
+    var maxAbsX = 0, minY = Infinity, maxY = -Infinity;
+    for (var i = 0; i < n; i++) {
+      var x0 = -totalW / 2 + i * (CW + GAP);
+      var xs = [x0, x0 + CW], zs = [-CL / 2, CL / 2], ys = [0, -6];
+      for (var a = 0; a < xs.length; a++) {
+        for (var b = 0; b < zs.length; b++) {
+          for (var c = 0; c < ys.length; c++) {
+            var yr = ys[c] * cy - zs[b] * sy;
+            var zr = ys[c] * sy + zs[b] * cy;
+            var inv = 1 / (zr + cam.dist);
+            maxAbsX = Math.max(maxAbsX, Math.abs(xs[a] * inv));
+            minY = Math.min(minY, yr * inv);
+            maxY = Math.max(maxY, yr * inv);
+          }
+        }
+      }
+    }
+    var byWidth = maxAbsX > 0 ? (W * 0.46) / maxAbsX : 900;
+    var spanY = maxY - minY;
+    var byHeight = spanY > 0 ? (H * 0.86) / spanY : 900;
+    fitFocal = Math.max(60, Math.min(byWidth, byHeight));
+    originY = H / 2 - ((minY + maxY) / 2) * fitFocal;
+  }
 
   function resize() {
     var rect = host.getBoundingClientRect();
@@ -63,8 +92,7 @@
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // Focal chosen so the whole bank of courts fits whatever the width.
-    cam.focal = Math.max(W, 420) * 0.92;
+    fitCamera();
     return true;
   }
 
@@ -73,10 +101,10 @@
     var cy = Math.cos(cam.pitch), sy = Math.sin(cam.pitch);
     var yr = y * cy - z * sy;
     var zr = y * sy + z * cy;
-    var d = cam.focal / (zr + cam.dist);
+    var d = fitFocal / (zr + cam.dist);
     return {
       x: W / 2 + x * d,
-      y: H * 0.60 + yr * d,
+      y: originY + yr * d,
       s: d
     };
   }
@@ -185,6 +213,7 @@
     // static image. Disabled under reduced motion.
     if (!reduced) {
       cam.pitch = 0.92 + Math.sin(t / 9000) * 0.045;
+      fitCamera();
     }
 
     // Painter's algorithm: farthest court first.

@@ -16,7 +16,7 @@
    Bump VERSION whenever anything in SHELL changes.
    =========================================================================== */
 
-const VERSION = 'que-static-v2.0.0';
+const VERSION = 'que-static-v2.1.0';
 
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
