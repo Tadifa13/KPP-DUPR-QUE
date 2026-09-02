@@ -60,21 +60,60 @@ sudo apt install php-cli php-sqlite3     # Debian/Ubuntu
 
 ### Android phone or tablet as the server
 
-Genuinely practical, and it means the whole system fits in a pocket.
+Genuinely practical, and it means the whole system fits in a pocket — phone runs
+the app, phone provides the Wi-Fi, nothing else needed.
 
-1. Install **Termux** from F-Droid (the Play Store build is outdated).
-2. In Termux:
+**1. Install Termux from [F-Droid](https://f-droid.org/packages/com.termux/).**
+Not the Play Store build — that one is unmaintained and its packages no longer
+install.
+
+**2. Install PHP and git, then clone:**
 
 ```bash
+pkg update && pkg upgrade
 pkg install php git
 git clone https://github.com/Tadifa13/KPP-DUPR-QUE.git
 cd KPP-DUPR-QUE
+```
+
+**3. Stop Android suspending it.** This is the step people miss. Android freezes
+background processes when the screen turns off, which kills the server
+mid-session:
+
+```bash
+termux-wake-lock
+```
+
+(Install `pkg install termux-api` if the command is missing. Release it later
+with `termux-wake-unlock`.)
+
+**4. Start it:**
+
+```bash
 bash serve.sh
 ```
 
-3. On that same phone open `http://localhost:8080` — which **is** a secure
-   context, so you get offline caching and install with no certificate work.
-4. Others join the phone's hotspot and use the LAN address it prints.
+Use `bash serve.sh` rather than `./serve.sh` — depending on how the repo was
+copied onto the device, the execute bit may not have survived.
+
+**5. Open it.** On the phone itself, `http://localhost:8080`. That **is** a
+secure context, so this device gets offline caching and "install to home screen"
+with no certificate work at all.
+
+**6. Let others in.** Turn on the phone's Wi-Fi hotspot, have everyone join it,
+and give them the LAN address `serve.sh` prints. **The hotspot needs no mobile
+data** — the devices only have to see each other.
+
+Notes for Android specifically:
+
+- Ports below 1024 are blocked without root. 8080 and 8443 are fine.
+- If `serve.sh` cannot find your address it says so and tells you to read it from
+  Wi-Fi settings; it will not print a misleading one.
+- `--https` additionally needs PHP's `openssl` and `pcntl`. If Termux's build
+  lacks either, the script says which and exits — plain HTTP still works fully,
+  and the phone running the server already has the full PWA over localhost.
+- Keep Termux in the foreground or in its persistent notification. Swiping the
+  notification away stops the server.
 
 ### iPhone or iPad as the server
 

@@ -54,17 +54,58 @@ fi
 mkdir -p "$ROOT/data"
 
 # Best-effort LAN address, so you can read it out at the venue.
-LAN_IP=""
-if command -v ipconfig >/dev/null 2>&1; then
-  for i in en0 en1 en2; do
-    LAN_IP=$(ipconfig getifaddr "$i" 2>/dev/null || true)
-    [ -n "$LAN_IP" ] && break
-  done
+#
+# Four probes, because the hosts this runs on differ: macOS has `ipconfig` but
+# not `hostname -I`; Android under Termux has neither, but does have Android's
+# own /system/bin/ip; most Linux boxes have `hostname -I` or `ifconfig`.
+# Getting this wrong is not cosmetic — the printed address is what people type
+# in, and what the court QR codes encode.
+lan_address() {
+  local ip=""
+
+  # macOS
+  if command -v ipconfig >/dev/null 2>&1; then
+    local i
+    for i in en0 en1 en2 en3; do
+      ip=$(ipconfig getifaddr "$i" 2>/dev/null || true)
+      [ -n "$ip" ] && { echo "$ip"; return; }
+    done
+  fi
+
+  # Linux and Android/Termux. Android keeps `ip` at /system/bin even when the
+  # iproute2 package is not installed inside Termux.
+  local IPBIN=""
+  command -v ip >/dev/null 2>&1 && IPBIN="ip"
+  [ -z "$IPBIN" ] && [ -x /system/bin/ip ] && IPBIN=/system/bin/ip
+  if [ -n "$IPBIN" ]; then
+    ip=$("$IPBIN" -4 addr show 2>/dev/null \
+      | awk '/inet /{print $2}' | cut -d/ -f1 \
+      | grep -Ev '^(127\.|169\.254\.)' | head -1 || true)
+    [ -n "$ip" ] && { echo "$ip"; return; }
+  fi
+
+  # Most desktop Linux
+  if command -v hostname >/dev/null 2>&1; then
+    ip=$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -Ev '^(127\.|169\.254\.|$)' | head -1 || true)
+    [ -n "$ip" ] && { echo "$ip"; return; }
+  fi
+
+  # Older systems, and Termux with net-tools installed
+  if command -v ifconfig >/dev/null 2>&1; then
+    ip=$(ifconfig 2>/dev/null | awk '/inet /{print $2}' | sed 's/^addr://' \
+      | grep -Ev '^(127\.|169\.254\.)' | head -1 || true)
+    [ -n "$ip" ] && { echo "$ip"; return; }
+  fi
+
+  echo ""
+}
+
+LAN_IP=$(lan_address)
+LAN_FOUND=1
+if [ -z "$LAN_IP" ]; then
+  LAN_IP="127.0.0.1"
+  LAN_FOUND=0
 fi
-if [ -z "$LAN_IP" ] && command -v hostname >/dev/null 2>&1; then
-  LAN_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || true)
-fi
-[ -z "$LAN_IP" ] && LAN_IP="127.0.0.1"
 
 # --------------------------------------------------------- plain http ------
 if [ "$USE_TLS" -eq 0 ]; then
@@ -72,7 +113,12 @@ if [ "$USE_TLS" -eq 0 ]; then
   echo "  KAMRYNNE QUE — running locally, no internet needed"
   echo "  ─────────────────────────────────────────────────"
   echo "  This machine   http://localhost:${PORT}"
-  echo "  Other devices  http://${LAN_IP}:${PORT}"
+  if [ "$LAN_FOUND" -eq 1 ]; then
+    echo "  Other devices  http://${LAN_IP}:${PORT}"
+  else
+    echo "  Other devices  could not detect this device's Wi-Fi address."
+    echo "                 Find it in Wi-Fi settings, then use http://<that>:${PORT}"
+  fi
   echo "  Database       ${ROOT}/data/que.sqlite"
   echo
   echo "  Everything works over plain HTTP on every device."
@@ -141,7 +187,12 @@ echo
 echo "  KAMRYNNE QUE — running locally over HTTPS, no internet needed"
 echo "  ────────────────────────────────────────────────────────────"
 echo "  This machine   https://localhost:${TLS_PORT}"
-echo "  Other devices  https://${LAN_IP}:${TLS_PORT}"
+if [ "$LAN_FOUND" -eq 1 ]; then
+  echo "  Other devices  https://${LAN_IP}:${TLS_PORT}"
+else
+  echo "  Other devices  could not detect this device's Wi-Fi address."
+  echo "                 Find it in Wi-Fi settings, then use https://<that>:${TLS_PORT}"
+fi
 echo "  Database       ${ROOT}/data/que.sqlite"
 echo
 echo "  The certificate is self-signed. Clicking through the browser warning is"
