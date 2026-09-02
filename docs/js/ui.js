@@ -5,6 +5,7 @@
 
 import * as E from './engine.js';
 import * as S from './store.js';
+import { mountCourt3d, unmount as unmountCourt3d } from './court3d.js';
 
 let state = S.load();
 let view = location.hash.replace('#', '') || 'play';
@@ -100,7 +101,9 @@ function chrome() {
     ['play', 'Play', 'court'],
     ['roster', 'Roster', 'users'],
     ['standings', 'Standings', 'trophy'],
+    ['reclub', 'Reclub', 'clipboard'],
     ['history', 'History', 'clock'],
+    ['settings', 'Settings', 'shield'],
   ];
   const nav = tabs.map(([k, label, ic]) =>
     `<a href="#${k}"${view === k ? ' class="on" aria-current="page"' : ''}>${icon(ic, 17)}${label}</a>`).join('');
@@ -181,6 +184,7 @@ function viewPlay() {
       ${statCard('trophy', completed().length, 'Matches', 'Played tonight')}
       ${statCard('clipboard', roster.length, 'Roster', 'In this session')}
     </div>
+    ${court3dBlock(s, onCourt)}
     <h2>Courts</h2>`;
 
   for (let c = 1; c <= s.courts; c++) {
@@ -278,6 +282,19 @@ function viewPlay() {
   return html;
 }
 
+/* The one animated element on the page: court occupancy at a glance. */
+function court3dBlock(session, onCourt) {
+  const data = [];
+  for (let c = 1; c <= session.courts; c++) {
+    const m = onCourt[c];
+    data.push({ n: c, state: m ? (m.state === 'live' ? 'live' : 'pending') : 'empty' });
+  }
+  pendingCourt3d = data;
+  return `<div class="court3d" data-court3d>
+    <canvas role="img" aria-label="Perspective view of ${data.length} courts showing which are in play"></canvas>
+  </div>`;
+}
+
 function statCard(ic, value, label, sub) {
   return `<div class="statcard"><span class="statcard-ring">${icon(ic, 21)}</span>
     <div><div class="v">${esc(value)}</div><div class="k">${esc(label)}</div>
@@ -364,6 +381,130 @@ function gainChip(gain, evidence) {
   if (!evidence) return '<span class="chip chip-muted">no data</span>';
   const tone = evidence < E.CFG.EVIDENCE_GAMES ? 'muted' : (gain > 8 ? 'good' : gain < -8 ? 'bad' : 'neutral');
   return `<span class="chip chip-${tone}">${fmtGain(gain)}${evidence < E.CFG.EVIDENCE_GAMES ? ' · provisional' : ''}</span>`;
+}
+
+function viewReclub() {
+  const src = state.session || state.history[0];
+  if (!src) {
+    return `<p class="eyebrow">Reclub</p><h1>Nothing to export</h1>
+      <section class="panel"><div class="panel-body"><div class="emptystate">
+        <span class="emptystate-ring">${icon('clipboard', 26)}</span>
+        <p class="t">No games yet</p><p class="d">Play some games and the entry list appears here.</p>
+      </div></div></section>`;
+  }
+  const names = nameMap();
+  const done = src.matches.filter((m) => m.state === 'complete');
+  const entered = done.filter((m) => m.reclubEntered).length;
+
+  return `
+    <p class="eyebrow">${state.session ? 'Live session' : 'Most recent'}</p>
+    <h1>Reclub entry list</h1>
+    <p class="sub">${done.length} completed game${done.length === 1 ? '' : 's'} · ${entered}/${done.length} entered</p>
+
+    <div class="card">
+      <div class="btn-row">
+        <button class="btn btn-primary" data-act="export-csv" data-id="${src.id}">${icon('download', 17)}Download CSV</button>
+        <button class="btn" data-act="export-txt" data-id="${src.id}">${icon('clipboard', 16)}Download list</button>
+        <button class="btn btn-ghost" data-act="backup">${icon('shield', 16)}Full backup</button>
+      </div>
+      <p class="hint">CSV columns match Reclub's import exactly — the same order the server build writes.</p>
+    </div>
+
+    ${done.length ? `
+      <button class="btn btn-block" data-act="mark-all" data-id="${src.id}" style="margin-bottom:var(--s3)">
+        ${icon('check', 16)}Mark all as entered</button>
+      ${done.map((m, i) => {
+        const t1Won = m.s1 > m.s2;
+        const cls = m.reclubEntered ? 'court-card live' : 'court-card';
+        return `<div class="card ${cls}">
+          <div class="card-head">
+            <span class="court-no">Game ${i + 1} · Court ${m.court}</span>
+            <div class="chips">${bracketChip(m.bracket)}
+              <span class="chip ${m.reclubEntered ? 'chip-good' : 'chip-muted'}">${m.reclubEntered ? 'entered' : 'not entered'}</span></div>
+          </div>
+          <div class="matchup">
+            <div class="side">${m.team1.map((id) => `<span class="pname">${esc(names[id])}</span>`).join('')}
+              <span class="score-big${t1Won ? '' : ' muted'}">${m.s1}</span></div>
+            <div class="vs">VS</div>
+            <div class="side right">${m.team2.map((id) => `<span class="pname">${esc(names[id])}</span>`).join('')}
+              <span class="score-big${t1Won ? ' muted' : ''}">${m.s2}</span></div>
+          </div>
+          <button class="btn btn-sm btn-block" style="margin-top:10px" data-act="toggle-entered"
+                  data-session="${src.id}" data-id="${m.id}">
+            ${m.reclubEntered ? 'Mark as not entered' : 'Mark as entered in Reclub'}</button>
+        </div>`;
+      }).join('')}` : `
+      <section class="panel"><div class="panel-body"><div class="emptystate">
+        <span class="emptystate-ring">${icon('clipboard', 26)}</span>
+        <p class="t">No completed games</p></div></div></section>`}`;
+}
+
+function viewSettings() {
+  const s = state.session;
+  const snaps = S.snapshots();
+  const bytes = (() => { try { return (localStorage.getItem('kamrynne-que:v1') || '').length * 2; } catch (e) { return 0; } })();
+
+  return `
+    <p class="eyebrow">${icon('shield', 13)}This device</p>
+    <h1>Settings</h1>
+    <p class="sub">Everything lives in this browser. Nothing is sent anywhere.</p>
+
+    <section class="panel">
+      <p class="panel-head">${icon('download', 15)}Backup and restore</p>
+      <div class="panel-body">
+        <p class="panel-note">
+          This data lives only in this browser on this device. Clearing site data,
+          switching phones or using a different browser loses it. Download a backup
+          before any of those — and after a big night.
+        </p>
+        <div class="btn-row" style="margin-bottom:var(--s3)">
+          <button class="btn btn-primary" data-act="backup">${icon('download', 17)}Save backup file</button>
+        </div>
+        <div class="field">
+          <label for="restore">Restore from a backup file</label>
+          <input type="file" id="restore" accept="application/json,.json" data-act="restore-file">
+          <p class="hint">Replaces everything currently in this browser. You will be asked to confirm.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <p class="panel-head">${icon('clipboard', 15)}Storage</p>
+      <div class="panel-body">
+        <div class="statgrid">
+          ${statCard('users', state.players.length, 'Players', 'On the club list')}
+          ${statCard('clock', state.history.length, 'Sessions', 'Archived')}
+          ${statCard('shield', (bytes / 1024).toFixed(1) + ' KB', 'Stored', 'In this browser')}
+          ${statCard('rotate', snaps.length, 'Snapshots', 'Automatic')}
+        </div>
+      </div>
+    </section>
+
+    ${s ? `
+    <section class="panel">
+      <p class="panel-head">${icon('court', 15)}Session</p>
+      <div class="panel-body">
+        <form data-act="session-settings">
+          <div class="field-row">
+            <div class="field"><label for="ccourts">Courts</label>
+              <select id="ccourts" name="courts">${Array.from({ length: E.CFG.MAX_COURTS }, (_, i) =>
+                `<option value="${i + 1}"${i + 1 === s.courts ? ' selected' : ''}>${i + 1}</option>`).join('')}</select></div>
+            <div class="field"><label for="ctarget">Games to</label>
+              <select id="ctarget" name="target">${E.CFG.VALID_TARGETS.map((t) =>
+                `<option value="${t}"${t === s.target ? ' selected' : ''}>${t}</option>`).join('')}</select></div>
+          </div>
+          <button class="btn btn-block" type="submit">${icon('check', 16)}Save</button>
+        </form>
+      </div>
+    </section>` : ''}
+
+    <section class="panel" style="border-color:rgba(255,107,129,.34)">
+      <p class="panel-head" style="color:var(--danger)">${icon('x', 15)}Danger zone</p>
+      <div class="panel-body">
+        <p class="panel-note">Erases every player, session and result in this browser. Download a backup first — this cannot be undone.</p>
+        <button class="btn btn-danger btn-block" data-act="wipe">${icon('x', 16)}Erase all data on this device</button>
+      </div>
+    </section>`;
 }
 
 function viewHistory() {
@@ -588,8 +729,7 @@ const ACTIONS = {
   },
 
   'export-csv'(el) {
-    const sid = el.dataset && el.dataset.id;
-    const src = sid ? (state.history.find((h) => h.id === sid) || state.session) : state.session;
+    const src = pickSession(el.dataset && el.dataset.id);
     if (!src) { toast('Nothing to export yet.', 'warn'); return; }
     const done = src.matches.filter((m) => m.state === 'complete');
     if (!done.length) { toast('No completed games to export.', 'warn'); return; }
@@ -602,16 +742,96 @@ const ACTIONS = {
       S.exportJson(state), 'application/json');
     toast('Backup downloaded. Keep it — this data lives only in this browser.');
   },
+
+  'export-txt'(el) {
+    const src = pickSession(el.dataset && el.dataset.id);
+    if (!src) { toast('Nothing to export yet.', 'warn'); return; }
+    const done = src.matches.filter((m) => m.state === 'complete');
+    if (!done.length) { toast('No completed games to export.', 'warn'); return; }
+    const stamp = new Date(src.startedAt).toISOString().slice(0, 10);
+    S.download('reclub-' + stamp + '.txt', E.exportText(src, done, nameMap()), 'text/plain');
+  },
+
+  'toggle-entered'(el) {
+    const src = pickSession(el.dataset.session);
+    if (!src) return;
+    const m = src.matches.find((x) => x.id === el.dataset.id);
+    if (!m) return;
+    m.reclubEntered = !m.reclubEntered;
+    commit();
+  },
+
+  'mark-all'(el) {
+    const src = pickSession(el.dataset.id);
+    if (!src) return;
+    src.matches.filter((m) => m.state === 'complete').forEach((m) => { m.reclubEntered = true; });
+    commit('All games marked as entered in Reclub.');
+  },
+
+  'session-settings'(form) {
+    const fd = new FormData(form);
+    const courts = Number(fd.get('courts'));
+    const target = Number(fd.get('target'));
+    const open = openMatches().map((m) => m.court);
+    // Refuse to close a court that has players on it rather than orphaning them.
+    if (open.some((c) => c > courts)) {
+      toast('Finish or clear the games on the higher courts first.', 'warn');
+      return;
+    }
+    state.session.courts = Math.max(1, Math.min(E.CFG.MAX_COURTS, courts));
+    if (E.CFG.VALID_TARGETS.includes(target)) state.session.target = target;
+    commit('Session settings saved.');
+  },
+
+  restore(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const next = S.importJson(String(reader.result));
+      if (!next) { toast('That file is not a KAMRYNNE QUE backup.', 'bad'); return; }
+      const summary = `${next.players.length} player(s), ${next.history.length} archived session(s)`
+        + (next.session ? ', 1 running session' : '');
+      if (!confirm(`Restore ${summary}?\n\nEverything currently in this browser is replaced. This cannot be undone.`)) return;
+      state = next;
+      commit('Backup restored.');
+    };
+    reader.onerror = () => toast('Could not read that file.', 'bad');
+    reader.readAsText(file);
+  },
+
+  wipe() {
+    if (!confirm('Erase every player, session and result stored in this browser?\n\nThis cannot be undone. Download a backup first.')) return;
+    if (!confirm('Really erase everything? Last chance.')) return;
+    state = S.blank();
+    commit('All data erased.', 'warn');
+  },
 };
+
+/** The live session, an archived one by id, or the most recent. */
+function pickSession(id) {
+  if (id) {
+    if (state.session && state.session.id === id) return state.session;
+    const h = state.history.find((x) => x.id === id);
+    if (h) return h;
+  }
+  return state.session || state.history[0] || null;
+}
 
 /* --------------------------------------------------------------- render -- */
 
+let pendingCourt3d = null;
+
 function render() {
+  unmountCourt3d();
+  pendingCourt3d = null;
   chrome();
-  const views = { play: viewPlay, roster: viewRoster, standings: viewStandings, history: viewHistory };
+  const views = {
+    play: viewPlay, roster: viewRoster, standings: viewStandings,
+    reclub: viewReclub, history: viewHistory, settings: viewSettings,
+  };
   const fn = views[view] || viewPlay;
   app.innerHTML = fn();
   app.scrollTop = 0;
+  if (pendingCourt3d) mountCourt3d(app.querySelector('[data-court3d]'), pendingCourt3d);
 }
 
 document.addEventListener('click', (ev) => {
@@ -629,6 +849,13 @@ document.addEventListener('submit', (ev) => {
   ev.preventDefault();
   const fn = ACTIONS[form.dataset.act];
   if (fn) fn(form);
+});
+
+document.addEventListener('change', (ev) => {
+  const el = ev.target.closest('input[type=file][data-act="restore-file"]');
+  if (!el || !el.files || !el.files[0]) return;
+  ACTIONS.restore(el.files[0]);
+  el.value = '';
 });
 
 window.addEventListener('hashchange', () => {

@@ -55,8 +55,16 @@ app and opens your browser.
 | Works offline | yes, after first visit | yes, on the LAN |
 | Installs as an app | yes, on every device | needs `--https` |
 | Data lives | in that one browser | in SQLite, shared |
+| Reclub CSV / text export | yes | yes |
+| Backup & restore to a file | yes | yes |
 | Spectator board & court QR codes | no | yes |
 | Several organizers at once | no | yes |
+
+The browser build carries Play with the live 3D court view, Roster, Standings
+with the podium, Reclub entry, History game logs, and a Settings page holding
+backup and restore. Because its data lives in one browser, **Settings → Save
+backup file** is the only thing standing between you and a cleared cache — take
+one after a session.
 
 Both run the **same matchmaking and rating maths**. The browser engine in
 [`docs/js/engine.js`](docs/js/engine.js) is a port of the PHP one, and the two

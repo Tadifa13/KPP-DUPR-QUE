@@ -527,3 +527,20 @@ export function exportCsv(session, matches, names) {
   });
   return rows.map((r) => r.map(q).join(',')).join('\r\n');
 }
+
+/** Plain-text entry list, for pasting into Reclub by hand. */
+export function exportText(session, matches, names) {
+  const lines = [session.name, `${matches.length} completed games — Reclub entry list`, ''];
+  matches.forEach((m, i) => {
+    const singles = (m.format || session.format) === 'singles';
+    const label = singles ? 'Player' : 'Team';
+    const t1Won = Number(m.s1) > Number(m.s2);
+    const side = (ids) => ids.map((id) => names[id] || 'Player').join(' & ');
+    lines.push(`Game ${i + 1} · ${singles ? 'SINGLES' : 'DOUBLES'} · Court ${m.court} · To ${m.target || CFG.DEFAULT_TARGET}`);
+    lines.push(`${label} 1 — ${side(m.team1)} — ${m.s1} — ${t1Won ? 'WINNER' : 'LOSER'}`);
+    lines.push(`${label} 2 — ${side(m.team2)} — ${m.s2} — ${t1Won ? 'LOSER' : 'WINNER'}`);
+    lines.push('');
+  });
+  if (!matches.length) lines.push('No completed games recorded.');
+  return lines.join('\n');
+}
